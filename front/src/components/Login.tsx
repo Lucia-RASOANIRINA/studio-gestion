@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios'; // <- Import axios
 import {
   Settings,
   Moon,
@@ -9,13 +10,75 @@ import {
   Twitter,
   Facebook,
   Linkedin,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
+
+import { useForm } from 'react-hook-form';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+
+// Schéma de validation avec Yup
+const schema = yup.object({
+  email: yup.string().email("Format d'email invalide").required('Adresse email requise'),
+  password: yup.string().required('Mot de passe requis'),
+}).required();
+
+type FormData = yup.InferType<typeof schema>;
 
 const App: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<FormData>({
+    resolver: yupResolver(schema),
+  });
+
+  // Charger email enregistré
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberEmail');
+    if (savedEmail) {
+      setValue('email', savedEmail);
+      setRememberMe(true);
+    }
+  }, [setValue]);
 
   const toggleTheme = () => setDarkMode(!darkMode);
+
+  const onSubmit = async (data: FormData) => {
+    setServerError(null);
+    if (rememberMe) {
+      localStorage.setItem('rememberEmail', data.email);
+    } else {
+      localStorage.removeItem('rememberEmail');
+    }
+
+    try {
+      // Envoi POST login au backend
+      const response = await axios.post('http://localhost:5000/api/login', data);
+      alert(response.data.message);
+
+      // Stocker token JWT pour futures requêtes
+      localStorage.setItem('token', response.data.token);
+
+      // Redirection vers page d'accueil
+      window.location.href = '/accueil'; // adapte selon ta route d'accueil
+    } catch (error: any) {
+      if (error.response) {
+        setServerError(error.response.data.message);
+      } else {
+        setServerError("Erreur de connexion au serveur");
+      }
+    }
+  };
 
   return (
     <div
@@ -23,7 +86,7 @@ const App: React.FC = () => {
         darkMode ? 'bg-black text-white' : 'bg-white text-black'
       }`}
     >
-      {/* Background */}
+      {/* Arrière-plan */}
       <div className="absolute inset-0 flex z-0 animate-gradient-fade">
         <div
           className={`w-1/2 h-full ${
@@ -41,7 +104,7 @@ const App: React.FC = () => {
         />
       </div>
 
-      {/* PARAMÈTRES */}
+      {/* Paramètres */}
       <div className="absolute top-3 right-5 z-30 group">
         <div className="transition hover:rotate-12 duration-300 cursor-pointer">
           <Settings
@@ -50,11 +113,10 @@ const App: React.FC = () => {
             } hover:scale-110 transition`}
           />
         </div>
-
-        {/* Menu flottant */}
         <div
-          className={`absolute right-0 mt-3 w-64 rounded-xl shadow-xl p-4 text-sm space-y-4 font-medium z-50 backdrop-blur-xl transition-all duration-500 opacity-0 invisible group-hover:opacity-100 group-hover:visible
-            ${darkMode ? 'bg-black/80 text-purple-200' : 'bg-white/90 text-pink-600'}`}
+          className={`absolute right-0 mt-3 w-64 rounded-xl shadow-xl p-4 text-sm space-y-4 font-medium z-50 backdrop-blur-xl transition-all duration-500 opacity-0 invisible group-hover:opacity-100 group-hover:visible ${
+            darkMode ? 'bg-black/80 text-purple-200' : 'bg-white/90 text-pink-600'
+          }`}
         >
           <button
             onClick={toggleTheme}
@@ -71,7 +133,6 @@ const App: React.FC = () => {
             <Info size={18} /> À propos
           </button>
 
-          {/* Réseaux sociaux */}
           <div className="border-t pt-5 border-blue space-y-4">
             <ul className="space-y-5">
               {[
@@ -121,41 +182,75 @@ const App: React.FC = () => {
         {/* Formulaire */}
         <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-10">
           <form
+            onSubmit={handleSubmit(onSubmit)}
             className={`w-full max-w-sm space-y-6 p-6 md:p-10 rounded-[1.5rem] shadow-2xl transition-all duration-700 transform hover:scale-[1.015] ${
               darkMode
                 ? 'bg-[#18042c]/90 border border-purple-600'
                 : 'bg-white/95 backdrop-blur-xl border border-pink-100'
             }`}
           >
-            <h2 className={`${darkMode ? 'text-white' : 'text-pink-600'}`}>Authentification</h2>
+            <h2 className={`text-xl font-bold ${darkMode ? 'text-white' : 'text-pink-600'}`}>
+              Authentification
+            </h2>
 
-            <div
-              className={`flex items-center gap-3 px-5 py-3 rounded-full border shadow-inner ${
-                darkMode
-                  ? 'border-purple-500 bg-white/5 text-white focus-within:border-purple-300'
-                  : 'border-pink-300 bg-white text-black focus-within:border-pink-500'
-              }`}
-            >
+            {/* Email */}
+            <div className="space-y-1">
               <input
                 type="email"
                 placeholder="Adresse email"
-                className="bg-transparent border-none outline-none w-full text-sm placeholder-gray-400"
+                {...register('email')}
+                onInput={(e) => {
+                  const input = e.currentTarget;
+                  input.value = input.value.replace(/[^\w@.\-_]/gi, '');
+                }}
+                className={`w-full px-5 py-3 rounded-full border shadow-inner text-sm bg-transparent outline-none ${
+                  darkMode
+                    ? 'border-purple-500 text-white placeholder-gray-400'
+                    : 'border-pink-300 text-black placeholder-gray-500'
+                }`}
               />
+              {errors.email && <p className="text-red-500 text-xs">{errors.email.message}</p>}
             </div>
 
-            <div
-              className={`flex items-center gap-3 px-5 py-3 rounded-full border shadow-inner ${
-                darkMode
-                  ? 'border-purple-500 bg-white/5 text-white focus-within:border-purple-300'
-                  : 'border-pink-300 bg-white text-black focus-within:border-pink-500'
-              }`}
-            >
+            {/* Mot de passe */}
+            <div className="space-y-1 relative">
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 placeholder="Mot de passe"
-                className="bg-transparent border-none outline-none w-full text-sm placeholder-gray-400"
+                {...register('password')}
+                className={`w-full px-5 py-3 pr-10 rounded-full border shadow-inner text-sm bg-transparent outline-none ${
+                  darkMode
+                    ? 'border-purple-500 text-white placeholder-gray-400'
+                    : 'border-pink-300 text-black placeholder-gray-500'
+                }`}
               />
+              <div
+                className="absolute top-2.5 right-4 cursor-pointer"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff size={18} className={darkMode ? 'text-white' : 'text-pink-600'} />
+                ) : (
+                  <Eye size={18} className={darkMode ? 'text-white' : 'text-pink-600'} />
+                )}
+              </div>
+              {errors.password && (
+                <p className="text-red-500 text-xs">{errors.password.message}</p>
+              )}
             </div>
+
+            {/* Remember me */}
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={() => setRememberMe(!rememberMe)}
+              />
+              Se souvenir de moi
+            </label>
+
+            {/* Affichage erreur serveur */}
+            {serverError && <p className="text-red-600 text-sm">{serverError}</p>}
 
             <button
               type="submit"
@@ -186,86 +281,58 @@ const App: React.FC = () => {
 
       {/* Modal À propos */}
       {showAbout && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-    <div
-      className={`max-w-3xl w-full p-8 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] ${
-        darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-black'
-      }`}
-    >
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Info size={20} /> À propos de l'application
-        </h2>
-        <button
-          onClick={() => setShowAbout(false)}
-          className="hover:text-red-500 text-sm font-bold"
-        >
-          ✕
-        </button>
-      </div>
-
-      <p className="mb-3">
-        Bienvenue dans notre application de gestion de studio d’enregistrement audio, une
-        plateforme moderne et intuitive conçue pour simplifier la gestion des opérations d’un
-        studio musical professionnel.
-      </p>
-
-      <hr className="border-t border-purple-300 my-4 opacity-50" />
-
-      <p className="mb-3">
-        Cette application a été pensée pour répondre aux besoins des maisons de production,
-        studios indépendants et artistes qui souhaitent centraliser la gestion de leurs
-        activités dans une interface fluide, accessible et performante.
-      </p>
-
-      <hr className="border-t border-purple-300 my-4 opacity-50" />
-
-      <div className="mb-6">
-        <h3 className="font-semibold mb-3 text-lg">Fonctionnalités et technologies</h3>
-        <ul className="space-y-3">
-          {[
-            { label: "Gestion des clients", description: "Ajout, recherche, historique de projets." },
-            { label: "Gestion des services", description: "Enregistrement, mise à jour et suppression." },
-            { label: "Gestion des commandes", description: "Suivi des commandes avec états." },
-            { label: "Facturation PDF", description: "Génération automatique et export de factures." },
-            {
-              label: "Technologies",
-              description:
-                "React, TypeScript, Tailwind CSS, Vite, Node.js, Express.js, MySQL.",
-            },
-          ].map((item, index) => (
-            <li key={index} className="flex items-start gap-2">
-              <span className="mt-1 w-2 h-2 rounded-full bg-purple-500 flex-shrink-0"></span>
-              <div>
-                <span className="font-semibold">{item.label} :</span>{" "}
-                <span>{item.description}</span>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <hr className="border-t border-purple-300 my-4 opacity-50" />
-
-      <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-        <Mail size={18} /> Contact
-      </h3>
-      <p className="mb-1">
-        Email :{" "}
-        <a
-          href="mailto:luciarasoanirina8@gmail.com"
-          className="hover:text-purple-600 hover:scale-110 "
-        >
-          luciarasoanirina8@gmail.com
-        </a>
-      </p>
-      <p >
-        Téléphone : <span className="hover:text-purple-600 hover:scale-110 ">038 39 702 36 / 032 86 774 06</span>
-      </p>
-    </div>
-  </div>
-)}
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div
+            className={`max-w-3xl w-full p-8 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] ${
+              darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-black'
+            }`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Info size={20} /> À propos de l'application
+              </h2>
+              <button
+                onClick={() => setShowAbout(false)}
+                className="hover:text-red-500 text-sm font-bold"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="mb-3">
+              Bienvenue dans notre application de gestion de studio d’enregistrement audio.
+            </p>
+            <hr className="border-t border-purple-300 my-4 opacity-50" />
+            <p className="mb-3">
+              Cette application est conçue pour centraliser la gestion des activités d’un studio musical.
+            </p>
+            <hr className="border-t border-purple-300 my-4 opacity-50" />
+            <div className="mb-6">
+              <h3 className="font-semibold mb-3 text-lg">Fonctionnalités</h3>
+              <ul className="space-y-3">
+                <li>• Gestion des clients, services, commandes</li>
+                <li>• Facturation PDF</li>
+                <li>• Interface moderne et responsive</li>
+              </ul>
+            </div>
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Mail size={18} /> Contact
+            </h3>
+            <p className="mb-1">
+              Email :{' '}
+              <a
+                href="mailto:luciarasoanirina8@gmail.com"
+                className="hover:text-purple-600 hover:scale-110"
+              >
+                luciarasoanirina8@gmail.com
+              </a>
+            </p>
+            <p>
+              Téléphone :{' '}
+              <span className="hover:text-purple-600">038 39 702 36 / 032 86 774 06</span>
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
