@@ -2,6 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import auth from './routes/auth';
+import studioRoutes from './routes/studio.routes';
+import clientRoutes from "./routes/client.routes";
+import serviceRoutes from "./routes/service.routes";
 
 dotenv.config();
 
@@ -18,6 +21,9 @@ app.use(express.json());
 
 // Routes
 app.use('/api', auth);
+app.use('/api', studioRoutes);
+app.use("/api", clientRoutes);
+app.use("/api", serviceRoutes);
 
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);

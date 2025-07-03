@@ -281,58 +281,52 @@ const App: React.FC = () => {
 
       {/* Modal À propos */}
       {showAbout && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
-          <div
-            className={`max-w-3xl w-full p-8 rounded-2xl shadow-xl overflow-y-auto max-h-[90vh] ${
-              darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-black'
-            }`}
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+    <div
+      className={`max-w-xl w-full p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[85vh] ${
+        darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-black'
+      }`}
+    >
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <Info size={18} /> À propos
+        </h2>
+        <button
+          onClick={() => setShowAbout(false)}
+          className="hover:text-red-500 text-sm font-bold"
+        >
+          ✕
+        </button>
+      </div>
+
+      <p className="mb-2">
+        Application de gestion pour studio d’enregistrement audio, offrant une interface claire et moderne.
+      </p>
+
+      <ul className="list-disc ml-5 mb-4 space-y-1 text-sm">
+        <li>Gestion des clients, services et commandes</li>
+        <li>Génération de factures en PDF</li>
+        <li>Design responsive avec mode sombre</li>
+      </ul>
+
+      <div className="text-sm">
+        <p className="mb-1">
+          📧 Email :{' '}
+          <a
+            href="mailto:luciarasoanirina8@gmail.com"
+            className="hover:text-purple-500 underline"
           >
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <Info size={20} /> À propos de l'application
-              </h2>
-              <button
-                onClick={() => setShowAbout(false)}
-                className="hover:text-red-500 text-sm font-bold"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="mb-3">
-              Bienvenue dans notre application de gestion de studio d’enregistrement audio.
-            </p>
-            <hr className="border-t border-purple-300 my-4 opacity-50" />
-            <p className="mb-3">
-              Cette application est conçue pour centraliser la gestion des activités d’un studio musical.
-            </p>
-            <hr className="border-t border-purple-300 my-4 opacity-50" />
-            <div className="mb-6">
-              <h3 className="font-semibold mb-3 text-lg">Fonctionnalités</h3>
-              <ul className="space-y-3">
-                <li>• Gestion des clients, services, commandes</li>
-                <li>• Facturation PDF</li>
-                <li>• Interface moderne et responsive</li>
-              </ul>
-            </div>
-            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
-              <Mail size={18} /> Contact
-            </h3>
-            <p className="mb-1">
-              Email :{' '}
-              <a
-                href="mailto:luciarasoanirina8@gmail.com"
-                className="hover:text-purple-600 hover:scale-110"
-              >
-                luciarasoanirina8@gmail.com
-              </a>
-            </p>
-            <p>
-              Téléphone :{' '}
-              <span className="hover:text-purple-600">038 39 702 36 / 032 86 774 06</span>
-            </p>
-          </div>
-        </div>
-      )}
+            luciarasoanirina8@gmail.com
+          </a>
+        </p>
+        <p>
+          📞 Téléphone : <span className="hover:text-purple-500">038 39 702 36 / 032 86 774 06</span>
+        </p>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 };
