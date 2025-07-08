@@ -5,7 +5,7 @@ import { Client } from "../models/client.model";
 // Récupérer tous les clients avec noms adaptés front
 export const getClients = async (_req: Request, res: Response) => {
   try {
-    const [rows]: any = await db.execute("SELECT * FROM clients");
+    const [rows]: any = await db.execute("SELECT * FROM clients ORDER BY Id_Cli DESC");
 
     const formattedRows: Client[] = rows.map((row: any) => ({
       id: row.Id_Cli,

@@ -6,12 +6,14 @@ import {
   Sun,
   Info,
   Music,
+  Phone,
   Mail,
   Twitter,
   Facebook,
   Linkedin,
   Eye,
   EyeOff,
+  X,
 } from 'lucide-react';
 
 import { useForm } from 'react-hook-form';
@@ -62,7 +64,6 @@ const App: React.FC = () => {
     }
 
     try {
-      // Envoi POST login au backend
       const response = await axios.post('http://localhost:5000/api/login', data);
       alert(response.data.message);
 
@@ -70,7 +71,7 @@ const App: React.FC = () => {
       localStorage.setItem('token', response.data.token);
 
       // Redirection vers page d'accueil
-      window.location.href = '/accueil'; // adapte selon ta route d'accueil
+      window.location.href = '/accueil'; 
     } catch (error: any) {
       if (error.response) {
         setServerError(error.response.data.message);
@@ -256,7 +257,7 @@ const App: React.FC = () => {
               type="submit"
               className={`w-full py-2 font-semibold rounded-full transition duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 ${
                 darkMode
-                  ? 'bg-gradient-to-r from-[#6a00f4] to-[#a100f2] text-white shadow-[0_0_20px_#a855f7aa] hover:shadow-[0_0_30px_#a855f7ee]'
+                  ? 'bg-gradient-to-r from-[#6a00f4] to-[#a100f2] text-white  hover:shadow-[0_0_30px_#a855f7ee]'
                   : 'bg-gradient-to-r from-pink-400 to-pink-600 text-white shadow-[0_0_20px_#f9a8d4] hover:shadow-[0_0_30px_#ec4899]'
               }`}
             >
@@ -281,47 +282,57 @@ const App: React.FC = () => {
 
       {/* Modal À propos */}
       {showAbout && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
     <div
-      className={`max-w-xl w-full p-6 rounded-2xl shadow-xl overflow-y-auto max-h-[85vh] ${
-        darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-black'
+      className={`max-w-lg w-full p-6 rounded-2xl shadow-2xl transition-all duration-300 overflow-y-auto max-h-[85vh] ${
+        darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-gray-800'
       }`}
     >
-      <div className="flex justify-between items-center mb-3">
-        <h2 className="text-lg font-bold flex items-center gap-2">
-          <Info size={18} /> À propos
+      {/* Header */}
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold flex items-center gap-2">
+          <Info size={20} className="text-purple-500" />
+          À propos de l'application
         </h2>
         <button
           onClick={() => setShowAbout(false)}
-          className="hover:text-red-500 text-sm font-bold"
+          className="p-1 rounded hover:bg-red-100 hover:text-red-500 transition"
         >
-          ✕
+          <X size={18} />
         </button>
       </div>
 
-      <p className="mb-2">
-        Application de gestion pour studio d’enregistrement audio, offrant une interface claire et moderne.
+      {/* Description */}
+      <p className="text-sm mb-4 leading-relaxed">
+        Cette application a été conçue pour gérer efficacement un studio d’enregistrement audio. 
+        Elle offre une interface intuitive, un design moderne et des fonctionnalités adaptées aux besoins quotidiens d’un studio.
       </p>
 
-      <ul className="list-disc ml-5 mb-4 space-y-1 text-sm">
-        <li>Gestion des clients, services et commandes</li>
-        <li>Génération de factures en PDF</li>
-        <li>Design responsive avec mode sombre</li>
-      </ul>
+      {/* Fonctionnalités */}
+      <div className="mb-4">
+        <h3 className="font-semibold text-sm text-purple-600 mb-2">Fonctionnalités principales :</h3>
+        <ul className="list-disc ml-5 space-y-1 text-sm">
+          <li>Gestion complète des clients, services et commandes</li>
+          <li>Génération automatique des factures au format PDF</li>
+          <li>Interface responsive avec prise en charge du mode sombre</li>
+        </ul>
+      </div>
 
-      <div className="text-sm">
-        <p className="mb-1">
-          📧 Email :{' '}
+      {/* Contact */}
+      <div className="border-t pt-3 text-sm space-y-2">
+        <div className="flex items-center gap-2">
+          <Mail size={16} className="text-purple-500" />
           <a
             href="mailto:luciarasoanirina8@gmail.com"
-            className="hover:text-purple-500 underline"
+            className="hover:text-purple-600 underline"
           >
             luciarasoanirina8@gmail.com
           </a>
-        </p>
-        <p>
-          📞 Téléphone : <span className="hover:text-purple-500">038 39 702 36 / 032 86 774 06</span>
-        </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Phone size={16} className="text-purple-500" />
+          <span>038 39 702 36 / 032 86 774 06</span>
+        </div>
       </div>
     </div>
   </div>

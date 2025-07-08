@@ -102,7 +102,7 @@ const Services = () => {
 
       <main className="pt-24 px-4 max-w-5xl mx-auto">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-pink-600 drop-shadow-md hover:scale-105 transition duration-300">
+          <h1 className="text-3xl font-bold text-pink-500 drop-shadow-md hover:scale-105 transition duration-300">
             Gestion des Services
           </h1>
 
@@ -124,7 +124,7 @@ const Services = () => {
             onSubmit={ajouterOuModifierService}
             className="bg-white border border-violet-200 p-6 rounded-2xl shadow-xl space-y-5 backdrop-blur-md hover:scale-[1.015] h-full"
           >
-            <h2 className="text-2xl font-bold text-center tracking-wide text-pink-600">
+            <h2 className="text-xl font-semibold text-center tracking-wide text-pink-600">
               {indexModification !== null ? "Modifier le Service" : "Ajouter un Service"}
             </h2>
 
@@ -160,7 +160,7 @@ const Services = () => {
           {/* Liste */}
           <div className="bg-white border border-violet-200 p-6 rounded-2xl shadow-xl backdrop-blur-md hover:scale-[1.015]">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold tracking-wide text-pink-600">
+              <h2 className="text-xl font-semibold tracking-wide text-pink-600">
                 Liste des Services
               </h2>
               <div className="w-8 h-8 flex items-center justify-center rounded-full bg-pink-500 text-white text-sm font-bold shadow-md animate-bounce">

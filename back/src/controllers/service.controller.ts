@@ -4,7 +4,7 @@ import { Service } from "../models/service.model";
 
 export const getServices = async (_req: Request, res: Response) => {
   try {
-    const [rows]: any = await db.execute("SELECT * FROM services");
+    const [rows]: any = await db.execute("SELECT * FROM services ORDER BY Num_services DESC");
     // Mapping pour correspondance front
     const formattedRows: Service[] = rows.map((row: any) => ({
       id: row.Num_services,

@@ -2,18 +2,13 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import Navbar from "../components/Navbar";
 import {
-  CalendarDays,
-  CalendarCheck,
-  CalendarClock,
-  DollarSign,
-  Phone,
   Search,
   Edit,
   Trash2,
-  Truck,
-  Hammer,
-  PhoneCall,
-  Coins,
+  CalendarDays,
+  User,
+  CreditCard,
+  DollarSign,
 } from "lucide-react";
 
 type Commande = {
@@ -21,192 +16,269 @@ type Commande = {
   dateCommande: string;
   dateRealisation: string;
   dateLivraison: string;
-  total: string;
-  reste: string;
-  telephoneClient: string;
+  total: number;
+  reste: number;
+  idClient: number;
+  nomClient?: string;
 };
 
-const Commandes = () => {
-  const getToday = () => new Date().toISOString().split("T")[0];
+type Client = {
+  id: number;
+  nom: string;
+};
 
+const getToday = () => new Date().toISOString().split("T")[0];
+
+const Commandes = () => {
   const [commande, setCommande] = useState<Commande>({
     dateCommande: getToday(),
-    dateRealisation: "",
-    dateLivraison: "",
-    total: "",
-    reste: "",
-    telephoneClient: "",
+    dateRealisation: getToday(),
+    dateLivraison: getToday(),
+    total: 0,
+    reste: 0,
+    idClient: 0,
   });
 
   const [commandes, setCommandes] = useState<Commande[]>([]);
-  const [termeRecherche, setTermeRecherche] = useState("");
+  const [clients, setClients] = useState<Client[]>([]);
   const [indexModification, setIndexModification] = useState<number | null>(null);
+  const [termeRecherche, setTermeRecherche] = useState("");
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/commandes")
-      .then(res => setCommandes(res.data))
-      .catch(err => console.error("Erreur chargement commandes", err));
+    chargerCommandes();
+    chargerClients();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const chargerCommandes = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/commandes");
+      setCommandes(res.data);
+    } catch (err) {
+      console.error("Erreur chargement commandes:", err);
+    }
+  };
+
+  const chargerClients = async () => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/clients");
+      setClients(res.data);
+    } catch (err) {
+      console.error("Erreur chargement clients:", err);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setCommande({ ...commande, [name]: value });
+    setCommande({ ...commande, [name]: name === "idClient" ? Number(value) : value });
   };
 
   const ajouterOuModifierCommande = async (e: React.FormEvent) => {
     e.preventDefault();
-    const { dateRealisation, dateLivraison, total, reste, telephoneClient } = commande;
+    const { dateCommande, dateRealisation, dateLivraison, idClient } = commande;
 
-    if (!dateRealisation || !dateLivraison || !total || !reste || !telephoneClient) {
+    if (!dateCommande || !dateRealisation || !dateLivraison || !idClient) {
       alert("Veuillez remplir tous les champs.");
       return;
     }
 
-    if (indexModification !== null && commande.id) {
-      await axios.put(`http://localhost:5000/api/commandes/${commande.id}`, commande);
-      const updated = [...commandes];
-      updated[indexModification] = commande;
-      setCommandes(updated);
-      setIndexModification(null);
-    } else {
-      const res = await axios.post("http://localhost:5000/api/commandes", commande);
-      setCommandes([...commandes, res.data]);
-    }
+    try {
+      if (indexModification !== null) {
+        const commandeAModifier = commandes[indexModification];
+        await axios.put(`http://localhost:5000/api/commandes/${commandeAModifier.id}`, commande);
+        const nouvelles = [...commandes];
+        nouvelles[indexModification] = { ...commande, id: commandeAModifier.id };
+        setCommandes(nouvelles);
+        setIndexModification(null);
+      } else {
+        const res = await axios.post("http://localhost:5000/api/commandes", commande);
+        setCommandes([...commandes, res.data]);
+      }
 
-    setCommande({
-      dateCommande: getToday(),
-      dateRealisation: "",
-      dateLivraison: "",
-      total: "",
-      reste: "",
-      telephoneClient: "",
-    });
+      setCommande({
+        dateCommande: getToday(),
+        dateRealisation: getToday(),
+        dateLivraison: getToday(),
+        total: 0,
+        reste: 0,
+        idClient: 0,
+      });
+    } catch (err) {
+      console.error("Erreur enregistrement commande:", err);
+    }
   };
 
+  const formatDateInput = (date: string) => new Date(date).toISOString().split("T")[0];
+
   const modifierCommande = (index: number) => {
-    setCommande(commandes[index]);
+    const c = commandes[index];
+    setCommande({
+      ...c,
+      dateCommande: formatDateInput(c.dateCommande),
+      dateRealisation: formatDateInput(c.dateRealisation),
+      dateLivraison: formatDateInput(c.dateLivraison),
+    });
     setIndexModification(index);
   };
 
   const supprimerCommande = async (index: number) => {
-    const cmd = commandes[index];
-    if (window.confirm("Voulez-vous vraiment supprimer cette commande ?")) {
-      await axios.delete(`http://localhost:5000/api/commandes/${cmd.id}`);
-      const restants = commandes.filter((_, i) => i !== index);
-      setCommandes(restants);
+    if (!window.confirm("Confirmer la suppression ?")) return;
+    const id = commandes[index].id;
+    try {
+      await axios.delete(`http://localhost:5000/api/commandes/${id}`);
+      setCommandes(commandes.filter((_, i) => i !== index));
+    } catch (err) {
+      console.error("Erreur suppression commande:", err);
     }
   };
 
-  const commandesFiltrees = commandes.filter((cmd) =>
-    Object.values(cmd).some((val) =>
-      String(val).toLowerCase().includes(termeRecherche.toLowerCase())
+  const commandesFiltres = commandes.filter((c) =>
+    Object.values(c).some((val) =>
+      val?.toString().toLowerCase().includes(termeRecherche.toLowerCase())
     )
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-#e8e6ff to-#fdf6ff text-gray-800">
+    <div className="min-h-screen bg-gradient-to-r from-yellow-50 to-pink-50 text-gray-800">
       <Navbar />
+      <main className="pt-24 px-4 max-w-5xl mx-auto text-xs">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
+          <h1 className="text-2xl font-bold text-pink-600">Gestion des Commandes</h1>
 
-      <main className="pt-20 px-4 max-w-6xl mx-auto">
-        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4">
-          <h1 className="text-3xl font-bold text-[#ec4899] drop-shadow-md hover:scale-105 transition duration-300">
-            Gestion des commandes
-          </h1>
-
-          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-full border border-violet-300 bg-violet-50 focus-within:ring-2 focus-within:ring-violet-400 transition w-full md:w-[300px]">
-            <Search size={18} />
+          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-md border border-violet-300 bg-violet-50 w-full md:w-[250px]">
+            <Search size={16} />
             <input
               type="text"
               value={termeRecherche}
               onChange={(e) => setTermeRecherche(e.target.value)}
-              placeholder="Rechercher commandes..."
-              className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 text-gray-800"
+              placeholder="Rechercher..."
+              className="bg-transparent border-none outline-none w-full text-xs"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <form
             onSubmit={ajouterOuModifierCommande}
-            className="bg-white border border-violet-200 p-4 rounded-2xl shadow-xl space-y-4 backdrop-blur-md hover:scale-[1.015]"
+            className="bg-white border border-violet-200 p-4 rounded-xl shadow-md space-y-3 text-xs"
           >
-            <h2 className="text-2xl font-bold text-center text-pink-600">
-              {indexModification !== null ? "Modifier la commande" : "Ajouter une commande"}
+            <h2 className="text-base font-semibold text-center text-pink-600">
+              {indexModification !== null ? "Modifier la commande" : "Nouvelle commande"}
             </h2>
 
-            {["dateCommande", "dateRealisation", "dateLivraison", "total", "reste", "telephoneClient"].map((champ, i) => {
-              const Icone = [CalendarDays, CalendarCheck, CalendarClock, DollarSign, Coins, Phone][i];
-              const type = champ.includes("date") ? "date" : champ === "total" || champ === "reste" ? "number" : "text";
-              const placeholder = ["Date commande", "Date réalisation", "Date livraison", "Montant total", "Reste à payer", "Téléphone client"][i];
-              return (
-                <div key={champ} className="flex items-center gap-2 px-3 py-2 rounded-full border border-violet-300 bg-violet-50">
-                  <Icone size={18} />
-                  <input
-                    type={type}
-                    name={champ}
-                    value={commande[champ as keyof Commande]}
-                    onChange={handleChange}
-                    placeholder={placeholder}
-                    className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400"
-                  />
-                </div>
-              );
-            })}
-
-            <button
-              type="submit"
-              className="w-full py-2 font-semibold rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300"
-            >
-              {indexModification !== null ? "Modifier" : "Enregistrer"}
-            </button>
-          </form>
-
-          <div className="bg-white border border-violet-200 p-4 rounded-2xl shadow-xl backdrop-blur-md hover:scale-[1.015]">
-            <h2 className="text-2xl font-bold text-center text-pink-600 mb-4">
-              Liste des commandes
-            </h2>
-
-            <div className="block md:hidden flex items-center gap-2 mb-4 px-4 py-2 rounded-full border border-violet-300 bg-violet-50">
-              <Search size={18} />
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-100">
+              <CalendarDays size={16} />
               <input
-                type="text"
-                value={termeRecherche}
-                onChange={(e) => setTermeRecherche(e.target.value)}
-                placeholder="Rechercher..."
-                className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 text-gray-800"
+                type="date"
+                name="dateCommande"
+                value={commande.dateCommande}
+                readOnly
+                className="bg-transparent border-none outline-none w-full text-xs cursor-not-allowed"
               />
             </div>
 
-            {commandesFiltrees.length === 0 ? (
-              <p className="text-violet-500 italic">Aucune commande trouvée.</p>
-            ) : (
-              <ul className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                {commandesFiltrees.map((c, i) => (
-                  <li
-                    key={i}
-                    className="border border-violet-200 rounded-lg p-4 bg-violet-50/50 hover:bg-violet-100 transition-all text-sm space-y-1 relative"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2"><CalendarDays size={16} /><span><strong>Commande :</strong> {c.dateCommande}</span></div>
-                      <div className="flex items-center gap-2"><Hammer size={16} /><span><strong>Réalisation :</strong> {c.dateRealisation}</span></div>
-                      <div className="flex items-center gap-2"><Truck size={16} /><span><strong>Livraison :</strong> {c.dateLivraison}</span></div>
-                      <div className="flex items-center gap-2"><DollarSign size={16} /><span><strong>Total :</strong> {c.total} Ar</span></div>
-                      <div className="flex items-center gap-2"><Coins size={16} /><span><strong>Reste :</strong> {c.reste} Ar</span></div>
-                      <div className="flex items-center gap-2"><PhoneCall size={16} /><span><strong>Client :</strong> {c.telephoneClient}</span></div>
-                    </div>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
+              <CalendarDays size={16} />
+              <input
+                type="date"
+                name="dateRealisation"
+                value={commande.dateRealisation}
+                onChange={handleChange}
+                min={getToday()}
+                className="bg-transparent border-none outline-none w-full text-xs"
+              />
+            </div>
 
-                    <div className="absolute top-2 right-2 flex gap-2">
-                      <button onClick={() => modifierCommande(i)} className="text-sm-600 hover:text-pink-600 hover:scale-110" title="Modifier">
-                        <Edit size={18} />
-                      </button>
-                      <button onClick={() => supprimerCommande(i)} className="text-sm-600 hover:text-pink-600 hover:scale-110" title="Supprimer">
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </li>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
+              <CalendarDays size={16} />
+              <input
+                type="date"
+                name="dateLivraison"
+                value={commande.dateLivraison}
+                onChange={handleChange}
+                min={getToday()}
+                className="bg-transparent border-none outline-none w-full text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
+              <DollarSign size={16} />
+              <input
+                type="number"
+                name="total"
+                value={commande.total}
+                onChange={handleChange}
+                placeholder="Total"
+                className="bg-transparent border-none outline-none w-full text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
+              <CreditCard size={16} />
+              <input
+                type="number"
+                name="reste"
+                value={commande.reste}
+                onChange={handleChange}
+                placeholder="Reste à payer"
+                className="bg-transparent border-none outline-none w-full text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
+              <User size={16} />
+              <select
+                name="idClient"
+                value={commande.idClient}
+                onChange={handleChange}
+                className="bg-transparent border-none outline-none w-full text-xs"
+              >
+                <option value={0}>-- Sélectionner un client --</option>
+                {clients.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.nom}
+                  </option>
                 ))}
-              </ul>
-            )}
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-1.5 font-semibold rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow hover:shadow-lg hover:-translate-y-0.5 transition duration-200"
+            >
+              {indexModification !== null ? "Modifier" : "Ajouter"}
+            </button>
+          </form>
+
+          <div className="bg-white border border-violet-200 p-4 rounded-xl shadow-md text-xs">
+            <div className="flex justify-between items-center mb-3">
+              <h2 className="text-lg font-semibold text-pink-600">Liste des Commandes</h2>
+              <div className="w-6 h-6 flex items-center justify-center rounded-full bg-pink-500 text-white text-[11px] font-bold">
+                {commandesFiltres.length}
+              </div>
+            </div>
+
+            <ul className="space-y-2 max-h-[320px] overflow-y-auto pr-1">
+              {commandesFiltres.map((c, i) => (
+                <li
+                  key={c.id}
+                  className="border border-violet-200 rounded-md p-3 bg-violet-50 hover:bg-violet-100 transition relative"
+                >
+                  <p><strong>Client:</strong> {clients.find(client => client.id === c.idClient)?.nom || "Inconnu"}</p>
+                  <p><strong>Commande:</strong> {formatDateInput(c.dateCommande)}</p>
+                  <p><strong>Réalisation:</strong> {formatDateInput(c.dateRealisation)}</p>
+                  <p><strong>Livraison:</strong> {formatDateInput(c.dateLivraison)}</p>
+                  <p><strong>Total:</strong> {c.total} Ar | <strong>Reste:</strong> {c.reste} Ar</p>
+                  <div className="absolute top-1 right-1 flex gap-1">
+                    <button onClick={() => modifierCommande(i)} title="Modifier">
+                      <Edit size={14} className="hover:text-pink-600" />
+                    </button>
+                    <button onClick={() => supprimerCommande(i)} title="Supprimer">
+                      <Trash2 size={14} className="hover:text-pink-600" />
+                    </button>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </main>

@@ -4,7 +4,8 @@ import Accueil from './pages/Accueil';
 import Clients from './pages/Clients';
 import Services from './pages/Services';
 import Commandes from './pages/Commandes';
-import About from './pages/about';
+import Parametres from './pages/Parametres';
+import LignesCommandes from './pages/LignesCommandes'
 
 function App() {
   return (
@@ -15,7 +16,8 @@ function App() {
         <Route path="/clients" element={<Clients />} />
         <Route path="/services" element={<Services />} />
         <Route path="/commandes" element={<Commandes />} />
-        <Route path="/about" element={<About />} />
+        <Route path="/parametres" element={<Parametres />} />
+        <Route path="/lignes-commandes" element={<LignesCommandes />} />
       </Routes>
     </BrowserRouter>
   );

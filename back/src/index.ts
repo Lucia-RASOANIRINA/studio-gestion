@@ -5,6 +5,8 @@ import auth from './routes/auth';
 import studioRoutes from './routes/studio.routes';
 import clientRoutes from "./routes/client.routes";
 import serviceRoutes from "./routes/service.routes";
+import commandeRoutes from './routes/commandeRoutes';
+
 
 dotenv.config();
 
@@ -24,6 +26,7 @@ app.use('/api', auth);
 app.use('/api', studioRoutes);
 app.use("/api", clientRoutes);
 app.use("/api", serviceRoutes);
+app.use("/api", commandeRoutes);
 
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
