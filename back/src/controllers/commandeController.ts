@@ -10,8 +10,6 @@ export const getCommandes = async (_: Request, res: Response) => {
         c.Date_Commandes AS dateCommande,
         c.Date_realisation AS dateRealisation,
         c.Date_livraison AS dateLivraison,
-        c.Total AS total,
-        c.Reste AS reste,
         c.Id_Clients AS idClient,
         cl.Nom_Cli AS nomClient
       FROM commandes c
@@ -28,8 +26,6 @@ export const createCommande = async (req: Request, res: Response) => {
     dateCommande,
     dateRealisation,
     dateLivraison,
-    total,
-    reste,
     idClient,
     lignes = [],
   }: Commande & { lignes?: LigneCommande[] } = req.body;
@@ -39,8 +35,8 @@ export const createCommande = async (req: Request, res: Response) => {
     await conn.beginTransaction();
 
     const [result]: any = await conn.query(
-      'INSERT INTO commandes (Date_Commandes, Date_realisation, Date_livraison, Total, Reste, Id_Clients) VALUES (?, ?, ?, ?, ?, ?)',
-      [dateCommande, dateRealisation, dateLivraison, total, reste, idClient]
+      'INSERT INTO commandes (Date_Commandes, Date_realisation, Date_livraison, Id_Clients) VALUES (?, ?, ?, ?)',
+      [dateCommande, dateRealisation, dateLivraison, idClient]
     );
 
     const commandeId = result.insertId;
@@ -58,8 +54,6 @@ export const createCommande = async (req: Request, res: Response) => {
       dateCommande,
       dateRealisation,
       dateLivraison,
-      total,
-      reste,
       idClient,
     });
   } catch (err) {
@@ -83,12 +77,12 @@ export const deleteCommande = async (req: Request, res: Response) => {
 
 export const updateCommande = async (req: Request, res: Response) => {
   const id = req.params.id;
-  const { dateCommande, dateRealisation, dateLivraison, total, reste, idClient } = req.body;
+  const { dateCommande, dateRealisation, dateLivraison, idClient } = req.body;
 
   try {
     await db.query(
-      'UPDATE commandes SET Date_Commandes=?, Date_realisation=?, Date_livraison=?, Total=?, Reste=?, Id_Clients=? WHERE Id_Commandes=?',
-      [dateCommande, dateRealisation, dateLivraison, total, reste, idClient, id]
+      'UPDATE commandes SET Date_Commandes=?, Date_realisation=?, Date_livraison=?, Id_Clients=? WHERE Id_Commandes=?',
+      [dateCommande, dateRealisation, dateLivraison, idClient, id]
     );
     res.json({ message: 'Commande modifiée' });
   } catch (err) {

@@ -7,8 +7,6 @@ import {
   Trash2,
   CalendarDays,
   User,
-  CreditCard,
-  DollarSign,
 } from "lucide-react";
 
 type Commande = {
@@ -16,8 +14,6 @@ type Commande = {
   dateCommande: string;
   dateRealisation: string;
   dateLivraison: string;
-  total: number;
-  reste: number;
   idClient: number;
   nomClient?: string;
 };
@@ -34,8 +30,6 @@ const Commandes = () => {
     dateCommande: getToday(),
     dateRealisation: getToday(),
     dateLivraison: getToday(),
-    total: 0,
-    reste: 0,
     idClient: 0,
   });
 
@@ -98,8 +92,6 @@ const Commandes = () => {
         dateCommande: getToday(),
         dateRealisation: getToday(),
         dateLivraison: getToday(),
-        total: 0,
-        reste: 0,
         idClient: 0,
       });
     } catch (err) {
@@ -140,18 +132,18 @@ const Commandes = () => {
   return (
     <div className="min-h-screen bg-gradient-to-r from-yellow-50 to-pink-50 text-gray-800">
       <Navbar />
-      <main className="pt-24 px-4 max-w-5xl mx-auto text-xs">
+      <main className="pt-24 px-4 max-w-5xl mx-auto text-sm">
         <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
           <h1 className="text-2xl font-bold text-pink-600">Gestion des Commandes</h1>
 
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-md border border-violet-300 bg-violet-50 w-full md:w-[250px]">
-            <Search size={16} />
+          <div className="hidden md:flex items-center gap-2 px-4 py-2 rounded-md border border-violet-300 bg-violet-50 w-full md:w-[300px]">
+            <Search size={18} />
             <input
               type="text"
               value={termeRecherche}
               onChange={(e) => setTermeRecherche(e.target.value)}
               placeholder="Rechercher..."
-              className="bg-transparent border-none outline-none w-full text-xs"
+              className="bg-transparent border-none outline-none w-full text-sm"
             />
           </div>
         </div>
@@ -159,78 +151,54 @@ const Commandes = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <form
             onSubmit={ajouterOuModifierCommande}
-            className="bg-white border border-violet-200 p-4 rounded-xl shadow-md space-y-3 text-xs"
+            className="bg-white border border-violet-200 p-5 rounded-xl shadow-md space-y-4 text-sm"
           >
-            <h2 className="text-base font-semibold text-center text-pink-600">
+            <h2 className="text-lg font-semibold text-center text-pink-600">
               {indexModification !== null ? "Modifier la commande" : "Nouvelle commande"}
             </h2>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-100">
-              <CalendarDays size={16} />
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-md border border-violet-300 bg-violet-100">
+              <CalendarDays size={18} />
               <input
                 type="date"
                 name="dateCommande"
                 value={commande.dateCommande}
                 readOnly
-                className="bg-transparent border-none outline-none w-full text-xs cursor-not-allowed"
+                className="bg-transparent border-none outline-none w-full text-sm cursor-not-allowed"
               />
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
-              <CalendarDays size={16} />
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-md border border-violet-300 bg-violet-50">
+              <CalendarDays size={18} />
               <input
                 type="date"
                 name="dateRealisation"
                 value={commande.dateRealisation}
                 onChange={handleChange}
                 min={getToday()}
-                className="bg-transparent border-none outline-none w-full text-xs"
+                className="bg-transparent border-none outline-none w-full text-sm"
               />
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
-              <CalendarDays size={16} />
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-md border border-violet-300 bg-violet-50">
+              <CalendarDays size={18} />
               <input
                 type="date"
                 name="dateLivraison"
                 value={commande.dateLivraison}
                 onChange={handleChange}
                 min={getToday()}
-                className="bg-transparent border-none outline-none w-full text-xs"
+                className="bg-transparent border-none outline-none w-full text-sm"
               />
             </div>
 
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
-              <DollarSign size={16} />
-              <input
-                type="number"
-                name="total"
-                value={commande.total}
-                onChange={handleChange}
-                placeholder="Total"
-                className="bg-transparent border-none outline-none w-full text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
-              <CreditCard size={16} />
-              <input
-                type="number"
-                name="reste"
-                value={commande.reste}
-                onChange={handleChange}
-                placeholder="Reste à payer"
-                className="bg-transparent border-none outline-none w-full text-xs"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 px-3 py-2 rounded-md border border-violet-300 bg-violet-50">
-              <User size={16} />
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-md border border-violet-300 bg-violet-50">
+              <User size={18} />
               <select
                 name="idClient"
                 value={commande.idClient}
                 onChange={handleChange}
-                className="bg-transparent border-none outline-none w-full text-xs"
+                className="bg-transparent border-none outline-none w-full text-sm"
               >
                 <option value={0}>-- Sélectionner un client --</option>
                 {clients.map((c) => (
@@ -243,13 +211,13 @@ const Commandes = () => {
 
             <button
               type="submit"
-              className="w-full py-1.5 font-semibold rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow hover:shadow-lg hover:-translate-y-0.5 transition duration-200"
+              className="w-full py-2.5 text-sm font-semibold rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow hover:shadow-lg hover:-translate-y-0.5 transition duration-200"
             >
               {indexModification !== null ? "Modifier" : "Ajouter"}
             </button>
           </form>
 
-          <div className="bg-white border border-violet-200 p-4 rounded-xl shadow-md text-xs">
+          <div className="bg-white border border-violet-200 p-5 rounded-xl shadow-md text-sm">
             <div className="flex justify-between items-center mb-3">
               <h2 className="text-lg font-semibold text-pink-600">Liste des Commandes</h2>
               <div className="w-6 h-6 flex items-center justify-center rounded-full bg-pink-500 text-white text-[11px] font-bold">
@@ -267,7 +235,6 @@ const Commandes = () => {
                   <p><strong>Commande:</strong> {formatDateInput(c.dateCommande)}</p>
                   <p><strong>Réalisation:</strong> {formatDateInput(c.dateRealisation)}</p>
                   <p><strong>Livraison:</strong> {formatDateInput(c.dateLivraison)}</p>
-                  <p><strong>Total:</strong> {c.total} Ar | <strong>Reste:</strong> {c.reste} Ar</p>
                   <div className="absolute top-1 right-1 flex gap-1">
                     <button onClick={() => modifierCommande(i)} title="Modifier">
                       <Edit size={14} className="hover:text-pink-600" />

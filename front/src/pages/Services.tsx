@@ -163,7 +163,7 @@ const Services = () => {
               <h2 className="text-xl font-semibold tracking-wide text-pink-600">
                 Liste des Services
               </h2>
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-pink-500 text-white text-sm font-bold shadow-md animate-bounce">
+              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-pink-500 text-white text-sm font-bold shadow-md ">
                 {servicesFiltres.length}
               </div>
             </div>

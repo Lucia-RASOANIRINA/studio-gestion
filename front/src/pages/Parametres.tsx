@@ -122,7 +122,7 @@ const About = () => {
         </button>
       </div>
 
-      <main className="relative z-10 pt-10 px-6 w-full flex justify-center mb-20 sm:mb-32">
+      <main className="relative z-10 pt-10 px-6 w-full flex justify-center mb-20 sm:mb-10">
         {!showChangePassword ? (
           <div className="w-full max-w-5xl md:h-[360px] bg-white/90 backdrop-blur-md border border-pink-200 shadow-2xl rounded-3xl p-8 md:p-12 flex flex-col md:flex-row gap-8">
             <div className="md:w-1/3 flex flex-col items-center justify-center text-center space-y-4">
