@@ -14,6 +14,7 @@ export const getCommandes = async (_: Request, res: Response) => {
         cl.Nom_Cli AS nomClient
       FROM commandes c
       JOIN clients cl ON cl.Id_Cli = c.Id_Clients
+      ORDER BY c.Date_Commandes DESC
     `);
     res.json(rows);
   } catch (err) {

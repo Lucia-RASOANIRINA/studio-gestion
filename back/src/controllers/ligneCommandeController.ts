@@ -3,7 +3,6 @@ import { db } from "../config/db";
 import { LigneCommande } from "../models/LigneCommande";
 import { RowDataPacket } from "mysql2";
 
-// ✅ Type complet avec Total
 interface LigneCommandeAvecTotal extends LigneCommande {
   Total: number;
 }

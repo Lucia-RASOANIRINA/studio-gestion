@@ -12,6 +12,7 @@
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "libphonenumber-js": "^1.12.9",
-    "react-phone-input-2": "^2.15.1"
+    "react-phone-input-2": "^2.15.1",
+    "react-to-print": "^3.1.1"
   }
 }

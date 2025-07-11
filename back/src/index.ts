@@ -7,6 +7,7 @@ import clientRoutes from "./routes/client.routes";
 import serviceRoutes from "./routes/service.routes";
 import commandeRoutes from './routes/commandeRoutes';
 import ligneCommandeRoutes from "./routes/ligneCommandeRoutes";
+import statistiquesRoutes from './routes/statistiquesRoutes';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use("/api", clientRoutes);
 app.use("/api", serviceRoutes);
 app.use("/api", commandeRoutes);
 app.use("/api", ligneCommandeRoutes);
+app.use('/api', statistiquesRoutes);
 
 app.listen(PORT, () => {
   console.log(`Serveur démarré sur le port ${PORT}`);
