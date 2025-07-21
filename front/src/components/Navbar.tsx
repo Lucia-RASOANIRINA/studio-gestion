@@ -2,32 +2,47 @@ import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import {
   Home, Users, Music, Package,
-  LogOut, Menu, X, Settings, FileText
+  LogOut, Menu, X, Settings, FileText,
 } from 'lucide-react';
+import { useDarkMode } from "../context/DarkModeContext";
 
 const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const toggleMenu = () => setMenuOpen(!menuOpen);
+  const { darkMode } = useDarkMode();
 
   useEffect(() => {
     document.body.style.overflow = menuOpen ? 'hidden' : '';
   }, [menuOpen]);
 
+  const toggleMenu = () => setMenuOpen(!menuOpen);
+
   const linkStyle =
     "relative flex items-center gap-2 text-sm hover:text-[#f472b6] hover:scale-110 transition-all duration-200 after:absolute after:left-0 after:bottom-[-4px] after:h-[2px] after:w-0 after:bg-[#f472b6] hover:after:w-full after:transition-all after:duration-300";
 
-const handleLogout = () => {
-  const confirmed = window.confirm("Voulez-vous vraiment vous déconnecter ?");
-  if (confirmed) {
-    toggleMenu(); 
-    window.location.href = "/";
-  }
-};
+  const handleLogout = () => {
+    const confirmed = window.confirm("Voulez-vous vraiment vous déconnecter ?");
+    if (confirmed) {
+      toggleMenu();
+      window.location.href = "/";
+    }
+  };
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-[#fceff9] via-[#fdf6ff] to-[#e6e6ff] text-black shadow-lg border-b border-pink-200/50">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 shadow-lg border-b transition-colors duration-300
+      ${
+        darkMode
+          ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] text-white border-purple-800"
+          : "bg-gradient-to-r from-[#fceff9] via-[#fdf6ff] to-[#e6e6ff] text-black border-pink-200/50"
+      }`}
+    >
       <div className="w-full flex justify-between items-center px-5 py-4">
-        <Link to="/" className="flex items-center gap-3 text-2xl font-bold tracking-wider text-[#ec4899] hover:scale-105 transition-transform duration-200">
+        <Link
+          to="/"
+          className={`flex items-center gap-3 text-2xl font-bold tracking-wider transition-transform duration-200 hover:scale-105 ${
+            darkMode ? "text-purple-300" : "text-[#ec4899]"
+          }`}
+        >
           <img src="/logo.png" alt="Logo" className="w-11 h-9" />
           Merix Studio
         </Link>
@@ -50,7 +65,9 @@ const handleLogout = () => {
         {/* Mobile Menu Toggle */}
         <button
           onClick={toggleMenu}
-          className="min-[1200px]:hidden focus:outline-none hover:text-[#f472b6] transition-transform duration-200"
+          className={`min-[1200px]:hidden focus:outline-none transition-transform duration-200 ${
+            darkMode ? "text-purple-300 hover:text-purple-500" : "hover:text-[#f472b6]"
+          }`}
         >
           {menuOpen ? <X size={30} /> : <Menu size={30} />}
         </button>
@@ -65,10 +82,24 @@ const handleLogout = () => {
       )}
 
       {/* Mobile Menu */}
-      <div className={`fixed top-0 right-0 z-50 w-2/3 max-w-sm h-full bg-gradient-to-br from-[#fceff9] via-[#fdf6ff] to-[#e6e6ff] text-black shadow-2xl transform transition-transform duration-300 ease-in-out ${menuOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-        <div className="flex justify-between items-center p-5 border-b border-black/10">
-          <span className="text-base font-bold text-[#ec4899]">Menu</span>
-          <button onClick={toggleMenu} className="text-black hover:text-[#f472b6]">
+      <div
+        className={`fixed top-0 right-0 z-50 w-2/3 max-w-sm h-full shadow-2xl transform transition-transform duration-300 ease-in-out
+        ${
+          darkMode
+            ? "bg-gradient-to-br from-[#1a0536] via-[#3b0070] to-[#520099] text-white"
+            : "bg-gradient-to-br from-[#fceff9] via-[#fdf6ff] to-[#e6e6ff] text-black"
+        }
+        ${menuOpen ? 'translate-x-0' : 'translate-x-full'}
+      `}
+      >
+        <div className="flex justify-between items-center p-5 border-b border-opacity-20 border-white/30">
+          <span className={`text-base font-bold ${darkMode ? "text-purple-300" : "text-[#ec4899]"}`}>
+            Menu
+          </span>
+          <button
+            onClick={toggleMenu}
+            className={`${darkMode ? "text-purple-300 hover:text-purple-500" : "text-black hover:text-[#f472b6]"}`}
+          >
             <X size={30} />
           </button>
         </div>
@@ -79,7 +110,7 @@ const handleLogout = () => {
           <Link to="/services" onClick={toggleMenu} className={linkStyle}><Music size={20} /> Services</Link>
           <Link to="/commandes" onClick={toggleMenu} className={linkStyle}><Package size={20} /> Commandes</Link>
           <Link to="/lignes-commandes" onClick={toggleMenu} className={linkStyle}><FileText size={20} /> Lignes de commande</Link>
-          <hr className="mx-auto border-b border-black/10" />
+          <hr className={`mx-auto border-b ${darkMode ? "border-purple-500" : "border-black/10"}`} />
           <Link to="/parametres" onClick={toggleMenu} className={linkStyle}><Settings size={20} /> Paramètres</Link>
           <button onClick={handleLogout} className={linkStyle}><LogOut size={20} /> Déconnexion</button>
         </div>

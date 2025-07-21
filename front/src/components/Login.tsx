@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios'; // <- Import axios
+import axios from 'axios';
 import {
   Settings,
   Moon,
@@ -20,7 +20,6 @@ import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 
-// Schéma de validation avec Yup
 const schema = yup.object({
   email: yup.string().email("Format d'email invalide").required('Adresse email requise'),
   password: yup.string().required('Mot de passe requis'),
@@ -28,7 +27,7 @@ const schema = yup.object({
 
 type FormData = yup.InferType<typeof schema>;
 
-const App: React.FC = () => {
+const Login: React.FC = () => {
   const [darkMode, setDarkMode] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -51,9 +50,20 @@ const App: React.FC = () => {
       setValue('email', savedEmail);
       setRememberMe(true);
     }
+
+    // Charger le mode sombre enregistré (important pour la cohérence)
+    const storedMode = localStorage.getItem('darkMode');
+    setDarkMode(storedMode === 'true');
   }, [setValue]);
 
-  const toggleTheme = () => setDarkMode(!darkMode);
+  // Toggle dark mode ET mise à jour dans localStorage
+  const toggleTheme = () => {
+    setDarkMode((prev) => {
+      const newMode = !prev;
+      localStorage.setItem('darkMode', newMode.toString());
+      return newMode;
+    });
+  };
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
@@ -67,7 +77,7 @@ const App: React.FC = () => {
       const response = await axios.post('http://localhost:5000/api/login', data);
       alert(response.data.message);
 
-      // Stocker token JWT pour futures requêtes
+      // Stocker token JWT
       localStorage.setItem('token', response.data.token);
 
       // Redirection vers page d'accueil
@@ -109,9 +119,7 @@ const App: React.FC = () => {
       <div className="absolute top-3 right-5 z-30 group">
         <div className="transition hover:rotate-12 duration-300 cursor-pointer">
           <Settings
-            className={`${
-              darkMode ? 'text-purple-300' : 'text-pink-600'
-            } hover:scale-110 transition`}
+            className={`${darkMode ? 'text-purple-300' : 'text-pink-600'} hover:scale-110 transition`}
           />
         </div>
         <div
@@ -282,64 +290,59 @@ const App: React.FC = () => {
 
       {/* Modal À propos */}
       {showAbout && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-    <div
-      className={`max-w-lg w-full p-6 rounded-2xl shadow-2xl transition-all duration-300 overflow-y-auto max-h-[85vh] ${
-        darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-gray-800'
-      }`}
-    >
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Info size={20} className="text-purple-500" />
-          À propos de l'application
-        </h2>
-        <button
-          onClick={() => setShowAbout(false)}
-          className="p-1 rounded hover:bg-red-100 hover:text-red-500 transition"
-        >
-          <X size={18} />
-        </button>
-      </div>
-
-      {/* Description */}
-      <p className="text-sm mb-4 leading-relaxed">
-        Cette application a été conçue pour gérer efficacement un studio d’enregistrement audio. 
-        Elle offre une interface intuitive, un design moderne et des fonctionnalités adaptées aux besoins quotidiens d’un studio.
-      </p>
-
-      {/* Fonctionnalités */}
-      <div className="mb-4">
-        <h3 className="font-semibold text-sm text-purple-600 mb-2">Fonctionnalités principales :</h3>
-        <ul className="list-disc ml-5 space-y-1 text-sm">
-          <li>Gestion complète des clients, services et commandes</li>
-          <li>Génération automatique des factures au format PDF</li>
-          <li>Interface responsive avec prise en charge du mode sombre</li>
-        </ul>
-      </div>
-
-      {/* Contact */}
-      <div className="border-t pt-3 text-sm space-y-2">
-        <div className="flex items-center gap-2">
-          <Mail size={16} className="text-purple-500" />
-          <a
-            href="mailto:luciarasoanirina8@gmail.com"
-            className="hover:text-purple-600 underline"
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+          <div
+            className={`max-w-lg w-full p-6 rounded-2xl shadow-2xl transition-all duration-300 overflow-y-auto max-h-[85vh] ${
+              darkMode ? 'bg-[#1f0036] text-purple-100' : 'bg-white text-gray-800'
+            }`}
           >
-            luciarasoanirina8@gmail.com
-          </a>
-        </div>
-        <div className="flex items-center gap-2">
-          <Phone size={16} className="text-purple-500" />
-          <span>038 39 702 36 / 032 86 774 06</span>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold flex items-center gap-2">
+                <Info size={20} className="text-purple-500" />
+                À propos de l'application
+              </h2>
+              <button
+                onClick={() => setShowAbout(false)}
+                className="p-1 rounded hover:bg-red-100 hover:text-red-500 transition"
+              >
+                <X size={18} />
+              </button>
+            </div>
 
+            <p className="text-sm mb-4 leading-relaxed">
+              Cette application a été conçue pour gérer efficacement un studio d’enregistrement audio. 
+              Elle offre une interface intuitive, un design moderne et des fonctionnalités adaptées aux besoins quotidiens d’un studio.
+            </p>
+
+            <div className="mb-4">
+              <h3 className="font-semibold text-sm text-purple-600 mb-2">Fonctionnalités principales :</h3>
+              <ul className="list-disc ml-5 space-y-1 text-sm">
+                <li>Gestion complète des clients, services et commandes</li>
+                <li>Génération automatique des factures au format PDF</li>
+                <li>Interface responsive avec prise en charge du mode sombre</li>
+              </ul>
+            </div>
+
+            <div className="border-t pt-3 text-sm space-y-2">
+              <div className="flex items-center gap-2">
+                <Mail size={16} className="text-purple-500" />
+                <a
+                  href="mailto:luciarasoanirina8@gmail.com"
+                  className="hover:text-purple-600 underline"
+                >
+                  luciarasoanirina8@gmail.com
+                </a>
+              </div>
+              <div className="flex items-center gap-2">
+                <Phone size={16} className="text-purple-500" />
+                <span>038 39 702 36 / 032 86 774 06</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default App;
+export default Login;

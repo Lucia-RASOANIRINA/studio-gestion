@@ -1,6 +1,8 @@
 import { Request, Response } from 'express';
 import { db } from '../config/db';
 import jwt from 'jsonwebtoken';
+import geoip from 'geoip-lite';
+import useragent from 'useragent';
 
 interface User {
   Num_Utilisateurs: number;
@@ -9,7 +11,6 @@ interface User {
   Mot_de_passe: string;
 }
 
-// 🔐 Connexion utilisateur
 export const login = async (req: Request, res: Response): Promise<void> => {
   const { email, password } = req.body;
 
@@ -21,13 +22,41 @@ export const login = async (req: Request, res: Response): Promise<void> => {
 
     const user = Array.isArray(rows) && rows.length > 0 ? (rows[0] as User) : null;
 
+    const rawIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
+    const ip = Array.isArray(rawIp) ? rawIp[0] : rawIp.toString().split(',')[0].trim();
+    const agent = useragent.parse(req.headers['user-agent'] || '');
+    const device = `${agent.os} - ${agent.toAgent()}`;
+    
+    let location: string;
+    if (/^(::1|127\.0\.0\.1|::ffff:127\.0\.0\.1)$/.test(ip)) {
+      location = 'Localhost, Dev';
+    } else {
+      const geo = geoip.lookup(ip);
+      location = geo && (geo.city || geo.country)
+        ? `${geo.city || 'Ville inconnue'}, ${geo.country || 'Pays inconnu'}`
+        : 'Inconnue';
+    }
+
     if (!user) {
-      res.status(401).json({ message: 'Email invalide' });
+      // Tentative échouée : email non trouvé
+      await db.execute(
+        `INSERT INTO connexions (Num_Utilisateurs, ip, device, location, success)
+         VALUES (?, ?, ?, ?, ?)`,
+        [null, ip.toString(), device, location, false]
+      );
+      res.status(401).json({ message: 'Utilisateur inconnu' });
       return;
     }
 
     const valid = password === user.Mot_de_passe;
+
     if (!valid) {
+      // Tentative échouée : mot de passe incorrect
+      await db.execute(
+        `INSERT INTO connexions (Num_Utilisateurs, ip, device, location, success)
+         VALUES (?, ?, ?, ?, ?)`,
+        [user.Num_Utilisateurs, ip.toString(), device, location, false]
+      );
       res.status(401).json({ message: 'Mot de passe incorrect' });
       return;
     }
@@ -36,6 +65,13 @@ export const login = async (req: Request, res: Response): Promise<void> => {
       res.status(500).json({ message: 'Clé secrète JWT non définie' });
       return;
     }
+
+    // Connexion réussie, on enregistre aussi
+    await db.execute(
+      `INSERT INTO connexions (Num_Utilisateurs, ip, device, location, success)
+       VALUES (?, ?, ?, ?, ?)`,
+      [user.Num_Utilisateurs, ip.toString(), device, location, true]
+    );
 
     const token = jwt.sign(
       { id: user.Num_Utilisateurs, email: user.Email_Utilisateurs },
@@ -59,7 +95,6 @@ export const changerMotDePasse = async (req: Request, res: Response): Promise<vo
   }
 
   const token = authHeader.split(' ')[1];
-
   let utilisateurEmailToken: string;
 
   try {

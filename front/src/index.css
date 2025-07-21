@@ -1,3 +1,24 @@
 html, body, #root {
   height: 100%;
 }
+
+/* Scrollbar styles for dark mode */
+.scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: #1a0536; 
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: #4a00e0; 
+  border-radius: 10px;
+  border: 2px solid #1a0536; 
+}
+
+/* Pour Firefox */
+.scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: #4a00e0 #1a0536;
+}

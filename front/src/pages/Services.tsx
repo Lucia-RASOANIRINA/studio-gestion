@@ -11,6 +11,7 @@ import {
   FileText,
   Folder,
   Ruler,
+  X,
 } from "lucide-react";
 
 type Service = {
@@ -29,6 +30,13 @@ const Services = () => {
   const [services, setServices] = useState<Service[]>([]);
   const [indexModification, setIndexModification] = useState<number | null>(null);
   const [termeRecherche, setTermeRecherche] = useState("");
+  const [erreurDoublon, setErreurDoublon] = useState("");
+  const [darkMode, setDarkMode] = useState(false);
+
+  useEffect(() => {
+    const storedMode = localStorage.getItem("darkMode");
+    setDarkMode(storedMode === "true");
+  }, []);
 
   useEffect(() => {
     chargerServices();
@@ -46,12 +54,40 @@ const Services = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setService({ ...service, [name]: value });
+    setErreurDoublon("");
   };
 
   const ajouterOuModifierService = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!service.titre || !service.type || !service.unite) {
-      alert("Veuillez remplir tous les champs.");
+      setErreurDoublon("Veuillez remplir tous les champs.");
+      return;
+    }
+
+    const doublonExact = services.some((s, idx) => {
+      if (indexModification !== null && idx === indexModification) return false;
+      return (
+        s.titre.toLowerCase() === service.titre.toLowerCase() &&
+        s.type.toLowerCase() === service.type.toLowerCase() &&
+        s.unite.toLowerCase() === service.unite.toLowerCase()
+      );
+    });
+
+    const doublonTitreType = services.some((s, idx) => {
+      if (indexModification !== null && idx === indexModification) return false;
+      return (
+        s.titre.toLowerCase() === service.titre.toLowerCase() &&
+        s.type.toLowerCase() === service.type.toLowerCase()
+      );
+    });
+
+    if (doublonExact) {
+      setErreurDoublon("Ce service existe déjà avec ce titre, type et unité.");
+      return;
+    }
+
+    if (doublonTitreType) {
+      setErreurDoublon("Un service avec ce titre et ce type existe déjà.");
       return;
     }
 
@@ -69,6 +105,7 @@ const Services = () => {
       }
 
       setService({ titre: "", type: "", unite: "" });
+      setErreurDoublon("");
     } catch (err) {
       console.error("Erreur d’enregistrement :", err);
     }
@@ -77,6 +114,13 @@ const Services = () => {
   const modifierService = (index: number) => {
     setService(services[index]);
     setIndexModification(index);
+    setErreurDoublon("");
+  };
+
+  const annulerModification = () => {
+    setService({ titre: "", type: "", unite: "" });
+    setIndexModification(null);
+    setErreurDoublon("");
   };
 
   const supprimerService = async (index: number) => {
@@ -97,7 +141,11 @@ const Services = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-r from-pink-50 to-violet-50 text-gray-800">
+    <div className={`min-h-screen transition-colors duration-500 ${
+        darkMode
+          ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] text-gray-100"
+          : "bg-gradient-to-r from-[#e6e6ff] via-[#fdd6ff] to-[#ffff] text-black border-pink-200/50"
+      }`}>
       <Navbar />
 
       <main className="pt-24 px-4 max-w-5xl mx-auto">
@@ -106,25 +154,32 @@ const Services = () => {
             Gestion des Services
           </h1>
 
-          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-full border border-violet-300 bg-violet-50 focus-within:ring-2 focus-within:ring-violet-400 transition w-full md:w-[300px]">
-            <Search size={18} />
+          <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-full border border-violet-300 focus-within:ring-2 focus-within:ring-violet-400 transition w-full md:w-[300px]">
+            <Search size={18} className={darkMode ? "text-purple-300" : "text-violet-700"} />
             <input
               type="text"
               value={termeRecherche}
               onChange={(e) => setTermeRecherche(e.target.value)}
               placeholder="Rechercher un service..."
-              className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 text-gray-800"
+              className={`bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 ${
+                darkMode ? "text-purple-100" : "text-gray-800"
+              }`}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-9">
-          {/* Formulaire */}
           <form
             onSubmit={ajouterOuModifierService}
-            className="bg-white border border-violet-200 p-6 rounded-2xl shadow-xl space-y-5 backdrop-blur-md hover:scale-[1.015] h-full"
+            className={`p-6 rounded-2xl shadow-xl space-y-5 backdrop-blur-md hover:scale-[1.015] h-full transition-colors duration-500 ${
+            darkMode
+              ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] border border-gray-700 text-white"
+              : "bg-white border border-violet-200 text-black"
+          }`}
           >
-            <h2 className="text-xl font-semibold text-center tracking-wide text-pink-600">
+            <h2 className={`text-xl font-semibold text-center tracking-wide ${
+                  darkMode ? "text-purple-300" : "text-pink-600"
+                }`}>
               {indexModification !== null ? "Modifier le Service" : "Ajouter un Service"}
             </h2>
 
@@ -135,8 +190,11 @@ const Services = () => {
             ].map(({ icon, name, placeholder }) => (
               <div
                 key={name}
-                className="flex items-center gap-3 px-4 py-3 rounded-full border border-violet-300 bg-violet-50 focus-within:ring-2 focus-within:ring-violet-400 transition"
-              >
+               className={`flex items-center gap-3 px-4 py-2 rounded-full border transition-colors ${
+                darkMode
+                  ? "border-violet-700 bg-violet-990"
+                  : "border-violet-300 bg-violet-50"
+              }`}>
                 {icon}
                 <input
                   type="text"
@@ -144,75 +202,117 @@ const Services = () => {
                   value={service[name as keyof Service]}
                   onChange={handleChange}
                   placeholder={placeholder}
-                  className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 text-gray-800"
+                  className={`bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 ${
+                  darkMode ? "text-purple-100" : "text-gray-800"
+                }`}
                 />
               </div>
             ))}
 
+            {erreurDoublon && (
+              <div className="text-red-600 text-sm text-center italic">{erreurDoublon}</div>
+            )}
+
             <button
               type="submit"
-              className="w-full py-2 font-semibold rounded-full bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300"
-            >
+              className={`w-full py-2 font-semibold rounded-full shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300 ${
+                darkMode
+                  ? "bg-gradient-to-r from-purple-800 to-purple-900 text-white shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300"
+                  : "bg-gradient-to-r from-pink-400 to-fuchsia-300 text-black shadow-md hover:shadow-xl hover:-translate-y-1 transition duration-300"
+              }`}>
               {indexModification !== null ? "Modifier" : "Ajouter"}
             </button>
           </form>
 
-          {/* Liste */}
-          <div className="bg-white border border-violet-200 p-6 rounded-2xl shadow-xl backdrop-blur-md hover:scale-[1.015]">
+          <div className={`p-6 rounded-2xl shadow-xl hover:scale-[1.015] border ${
+              darkMode
+                ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] border-gray-700"
+                : "bg-white border-violet-200"
+            }`}
+            >
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold tracking-wide text-pink-600">
+              <h2 className={`text-xl font-semibold tracking-wide ${
+                  darkMode ? "text-purple-300" : "text-pink-600"
+                }`}
+                >
                 Liste des Services
               </h2>
-              <div className="w-8 h-8 flex items-center justify-center rounded-full bg-pink-500 text-white text-sm font-bold shadow-md ">
+              <div className={`w-8 h-8 flex items-center justify-center rounded-full text-white text-sm font-bold shadow-md ${
+                  darkMode ? "bg-purple-600" : "bg-pink-500"
+                }`}
+                >
                 {servicesFiltres.length}
               </div>
             </div>
 
-            <div className="block md:hidden flex items-center gap-3 mb-4 px-4 py-2 rounded-full border border-violet-300 bg-violet-50 focus-within:ring-2 focus-within:ring-violet-400 transition w-full">
-              <Search size={18} />
+            <div className={`block md:hidden flex items-center gap-3 mb-4 px-4 py-2 rounded-full border ${
+                darkMode
+                  ? "border-purple-700 bg-[#260044]"
+                  : "border-violet-300 bg-violet-50"
+              }`}
+              >
+              <Search size={18} className={darkMode ? "text-purple-300" : "text-violet-700"}/>
               <input
                 type="text"
                 value={termeRecherche}
                 onChange={(e) => setTermeRecherche(e.target.value)}
                 placeholder="Rechercher un service..."
-                className="bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 text-gray-800"
-              />
+                className={`bg-transparent border-none outline-none w-full text-sm placeholder-violet-400 ${
+                  darkMode ? "text-purple-100" : "text-gray-800"
+                }`}
+                />
             </div>
 
             {servicesFiltres.length === 0 ? (
               <p className="text-violet-500 italic">Aucun service trouvé.</p>
             ) : (
-              <ul className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
+              <ul className={`space-y-3 max-h-[300px] overflow-y-auto pr-2 ${
+                  darkMode ? "scrollbar-dark" : ""
+                }`}>
                 {servicesFiltres.map((s) => {
                   const idx = services.indexOf(s);
                   return (
                     <li
                       key={s.id}
-                      className="border border-violet-200 rounded-lg p-4 bg-violet-50/50 hover:bg-violet-100 transition-all text-sm space-y-1 relative"
-                    >
-                      <div className="space-y-2 text-sm text-gray-800">
+                      className={`rounded-lg p-4 transition-all text-sm space-y-1 relative border ${
+                      darkMode
+                        ? "bg-[#1a0536] border-gray-700 hover:bg-[#0a0536] text-purple-100"
+                        : "bg-violet-50/50 border-violet-200 hover:bg-violet-100 text-gray-800"
+                      }`}
+                      >
+                      <div className="space-y-2 text-sm ">
                         <div className="flex items-center gap-2">
-                          <FileText size={16} className="text-black" />
+                          <FileText size={16} className={darkMode ? "text-purple-300" : "text-black"} />
                           <span><strong>Titre :</strong> {s.titre}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Folder size={16} className="text-black" />
+                          <Folder size={16} className={darkMode ? "text-purple-300" : "text-black"} />
                           <span><strong>Type :</strong> {s.type}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <Ruler size={16} className="text-black" />
+                          <Ruler size={16} className={darkMode ? "text-purple-300" : "text-black"} />
                           <span><strong>Unité :</strong> {s.unite}</span>
                         </div>
                       </div>
 
                       <div className="absolute top-2 right-2 flex gap-2">
-                        <button
-                          onClick={() => modifierService(idx)}
-                          className="text-sm-600 hover:text-pink-600 hover:scale-110"
-                          title="Modifier"
-                        >
-                          <Edit size={18} />
-                        </button>
+                        {indexModification === idx ? (
+                          <button
+                            onClick={annulerModification}
+                            className="text-red-500 hover:scale-110"
+                            title="Annuler"
+                          >
+                            <X size={18} />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => modifierService(idx)}
+                            className="text-sm-600 hover:text-pink-600 hover:scale-110"
+                            title="Modifier"
+                          >
+                            <Edit size={18} />
+                          </button>
+                        )}
                         <button
                           onClick={() => supprimerService(idx)}
                           className="text-sm-600 hover:text-pink-600 hover:scale-110"
