@@ -15,9 +15,213 @@ import {
   Bell,
   Clock,
   CheckCircle,
+  PackageCheck,
+  Truck,
+  CalendarDays,
+  Search,
+  Wrench,
+  BellOff,
+  UploadCloud,
+  CalendarCheck
 } from "lucide-react";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeContext";
+
+function HistoriqueAvecFiltre({
+  commandes,
+  darkMode,
+}: {
+  commandes: any[];
+  darkMode: boolean;
+}) {
+  const [selectedFilter, setSelectedFilter] = useState("Commandes du jour");
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const sections = [
+    {
+      key: "Commandes réalisées",
+      title: "Commandes réalisées",
+      icon: <CheckCircle className="text-green-500 w-5 h-5 mr-2" />,
+      color: "text-green-500",
+      filter: (c: any) => c.dateRealisation && new Date(c.dateRealisation) < new Date(),
+      dateKey: (c: any) => new Date(c.dateRealisation),
+      label: (c: any) =>
+        `Commande #${c.id} - Réalisée le ${new Date(c.dateRealisation!).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`,
+    },
+    {
+      key: "Commandes livrées",
+      title: "Commandes livrées",
+      icon: <PackageCheck className="text-blue-500 w-5 h-5 mr-2" />,
+      color: "text-blue-500",
+      filter: (c: any) => c.dateLivraison && new Date(c.dateLivraison) < new Date(),
+      dateKey: (c: any) => new Date(c.dateLivraison),
+      label: (c: any) =>
+        `Commande #${c.id} - Livrée le ${new Date(c.dateLivraison!).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`,
+    },
+    {
+      key: "Commandes à réaliser",
+      title: "Commandes à réaliser",
+      icon: <Clock className="text-orange-500 w-5 h-5 mr-2" />,
+      color: "text-orange-500",
+      filter: (c: any) => c.dateRealisation && new Date(c.dateRealisation) > new Date(),
+      dateKey: (c: any) => new Date(c.dateRealisation),
+      label: (c: any) =>
+        `Commande #${c.id} - À réaliser le ${new Date(c.dateRealisation!).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`,
+    },
+    {
+      key: "Commandes à livrer",
+      title: "Commandes à livrer",
+      icon: <Truck className="text-purple-500 w-5 h-5 mr-2" />,
+      color: "text-purple-500",
+      filter: (c: any) => c.dateLivraison && new Date(c.dateLivraison) > new Date(),
+      dateKey: (c: any) => new Date(c.dateLivraison),
+      label: (c: any) =>
+        `Commande #${c.id} - À livrer le ${new Date(c.dateLivraison!).toLocaleDateString("fr-FR", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+        })}`,
+    },
+    {
+      key: "Commandes du jour",
+      title: "Commandes du jour",
+      icon: <CalendarDays className="text-rose-500 w-5 h-5 mr-2" />,
+      color: "text-rose-500",
+      filter: (c: any) =>
+        (c.dateRealisation && new Date(c.dateRealisation).toDateString() === new Date().toDateString()) ||
+        (c.dateLivraison && new Date(c.dateLivraison).toDateString() === new Date().toDateString()),
+      dateKey: () => new Date(),
+      label: (c: any) => {
+        const isRealToday = c.dateRealisation && new Date(c.dateRealisation).toDateString() === new Date().toDateString();
+        const isLivToday = c.dateLivraison && new Date(c.dateLivraison).toDateString() === new Date().toDateString();
+        return (
+          `Commande #${c.id}` +
+          (isRealToday ? " - Réalisation aujourd'hui" : "") +
+          (isLivToday ? " - Livraison aujourd'hui" : "")
+        );
+      },
+    },
+  ];
+
+  const currentSection = sections.find((s) => s.title === selectedFilter)!;
+
+  const moisFr = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+  const filtered = commandes
+    .filter(currentSection.filter)
+    .filter((c) => {
+      const label = currentSection.label(c).toLowerCase();
+      const date = currentSection.dateKey(c);
+      const moisLettre = moisFr[date.getMonth()];
+      const annee = date.getFullYear().toString();
+      const moisNum = (date.getMonth() + 1).toString().padStart(2, "0");
+      return (
+        label.includes(searchTerm.toLowerCase()) ||
+        moisLettre.includes(searchTerm.toLowerCase()) ||
+        annee.includes(searchTerm) ||
+        moisNum.includes(searchTerm)
+      );
+    });
+
+  const groupedByMonth: { [key: string]: any[] } = {};
+  filtered.forEach((c) => {
+    const d = currentSection.dateKey(c);
+    const key = `${d.toLocaleString("fr-FR", { month: "long" })} ${d.getFullYear()}`;
+    if (!groupedByMonth[key]) groupedByMonth[key] = [];
+    groupedByMonth[key].push(c);
+  });
+
+  return (
+    <div
+      className={`rounded-3xl p-8 space-y-8 transition-all duration-300 border shadow-2xl ${
+        darkMode
+          ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] border-gray-700 text-gray-100"
+          : "bg-gradient-to-br from-white via-gray-50 to-gray-100 border-gray-200 text-gray-800"
+      }`}
+    >
+      <h2 className="text-3xl font-extrabold mb-4">
+Historique des commandes</h2>
+
+      {/* Mini-navbar */}
+      <nav className="flex flex-wrap gap-3 mb-6">
+        {sections.map(({ title, icon, color }) => (
+          <button
+            key={title}
+            onClick={() => setSelectedFilter(title)}
+            className={`flex items-center px-4 py-2 rounded-full border font-medium text-sm transition shadow-sm ${
+              selectedFilter === title
+                ? `${color} bg-opacity-10 border-current`
+                : darkMode
+                ? "text-gray-300 border-gray-600 hover:bg-[#2d2d44]"
+                : "text-gray-600 border-gray-300 hover:bg-gray-100"
+            }`}
+          >
+            {icon}
+            {title}
+          </button>
+        ))}
+      </nav>
+
+      {/* Search bar */}
+      <div className="relative mb-6">
+        <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${darkMode ? "text-gray-400" : "text-gray-500"}`} />
+        <input
+          type="text"
+          placeholder="Rechercher une commande, un mois, une année..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`pl-10 pr-4 py-2 w-full rounded-full shadow-sm transition border focus:outline-none focus:ring-2 ${
+            darkMode
+              ? "bg-[#1a0536] text-white placeholder-gray-400 border-gray-600 focus:ring-purple-400 focus:border-purple-500"
+              : "bg-white text-black placeholder-gray-400 border-gray-300 focus:ring-blue-100 focus:border-blue-400"
+          }`}
+        />
+      </div>
+
+      {/* Résultats */}
+      {Object.entries(groupedByMonth).length === 0 ? (
+        <p className={`text-sm italic ml-2 ${darkMode ? "text-gray-400" : "text-gray-500"}`}>Aucune commande trouvée.</p>
+      ) : (
+        Object.entries(groupedByMonth).map(([month, entries]) => (
+          <div
+            key={month}
+            className={`ml-2 mb-4 rounded-xl p-5 shadow-md border ${
+              darkMode ? "bg-[#1a0536] border-gray-600" : "bg-white border-gray-200"
+            }`}
+          >
+            <h4 className={`text-md font-bold mb-3 ${darkMode ? "text-gray-200" : "text-gray-700"}`}>{month}</h4>
+            <ul className="space-y-2">
+              {entries.map((c) => (
+                <li
+                  key={c.id}
+                  className={`rounded-lg px-4 py-2 border transition ${
+                    darkMode
+                      ? "bg-[#1a0240] border-gray-700 text-gray-100 hover:bg-[#1a0536]"
+                      : "bg-gray-50 border-gray-100 text-gray-700 hover:shadow-md"
+                  }`}
+                >
+                  <span className="text-sm">{currentSection.label(c)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))
+      )}
+    </div>
+  );
+}
 
 type StudioData = {
   nom: string;
@@ -42,16 +246,171 @@ const About = () => {
   const [connexions, setConnexions] = useState<
   { date_connexion: string; ip: string; device: string; location: string, success: string, nom_utilisateurs: string }[]
 >([]);
+const [commandes, setCommandes] = useState<
+  { id: number; dateRealisation: string | null; dateLivraison: string | null }[]
+>([]);
+
 
   const tabs = [
     { id: "profil", label: "Informations personnelles", icon: <Info /> },
     { id: "motdepasse", label: "Mot de passe", icon: <Lock /> },
     { id: "securite", label: "Sécurité ", icon: <Shield /> },
     { id: "preferences", label: "Préférences", icon: <Settings /> },
-    { id: "notifications", label: "Notifications (à venir)", icon: <Bell /> },
-    { id: "historique", label: "Historique (à faire)", icon: <Clock /> },
+    { id: "notifications", label: "Notifications", icon: <Bell /> },
+    { id: "historique", label: "Historique ", icon: <Clock /> },
   ];
   const { darkMode, toggleDarkMode } = useDarkMode();
+
+  // Chargement des commandes si l'onglet actif est "historique"
+  useEffect(() => {
+    if (activeTab === "historique") {
+      axios
+        .get("http://localhost:5000/api/commandes")
+        .then((res) => {
+          setCommandes(res.data);
+        })
+        .catch((err) => {
+          console.error("Erreur chargement commandes :", err);
+          setCommandes([]);
+        });
+    }
+  }, [activeTab]);
+
+const [showNotifications, setShowNotifications] = useState(false);
+
+// Notifications dynamiques (avec composants React au lieu de simples chaînes)
+type Notification = {
+  id: number;
+  icon: React.ReactNode;
+  message: string;
+  isRead: boolean;
+};
+
+const [notifications, setNotifications] = useState<Notification[]>([]);
+
+useEffect(() => {
+  if (activeTab === "notifications") {
+    axios
+      .get("http://localhost:5000/api/commandes")
+      .then((res) => {
+        const all = res.data;
+        const today = new Date();
+        const demain = new Date();
+        demain.setDate(today.getDate() + 1);
+
+        const estMemeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
+
+        const commandesAujourdhui = all.filter((c: any) =>
+          (c.dateRealisation && estMemeJour(new Date(c.dateRealisation), today)) ||
+          (c.dateLivraison && estMemeJour(new Date(c.dateLivraison), today))
+        );
+
+        const commandesRealisationAujourdhui = all.filter(
+          (c: any) => c.dateRealisation && estMemeJour(new Date(c.dateRealisation), today)
+        );
+        const commandesLivraisonAujourdhui = all.filter(
+          (c: any) => c.dateLivraison && estMemeJour(new Date(c.dateLivraison), today)
+        );
+
+        const commandesRealisationDemain = all.filter(
+          (c: any) => c.dateRealisation && estMemeJour(new Date(c.dateRealisation), demain)
+        );
+        const commandesLivraisonDemain = all.filter(
+          (c: any) => c.dateLivraison && estMemeJour(new Date(c.dateLivraison), demain)
+        );
+
+        const notifs: Notification[] = [];
+
+        if (commandesAujourdhui.length > 0) {
+          notifs.push({
+            id: 1,
+            icon: <PackageCheck className="inline-block w-4 h-4 mr-2" />,
+            message: `${commandesAujourdhui.length} commande(s) enregistrée(s) aujourd’hui`,
+            isRead: false,
+          });
+        }
+        if (commandesRealisationAujourdhui.length > 0) {
+          notifs.push({
+            id: 2,
+            icon: <Wrench className="inline-block w-4 h-4 mr-2" />,
+            message: `${commandesRealisationAujourdhui.length} à réaliser aujourd’hui`,
+            isRead: false,
+          });
+        }
+        if (commandesLivraisonAujourdhui.length > 0) {
+          notifs.push({
+            id: 3,
+            icon: <Truck className="inline-block w-4 h-4 mr-2" />,
+            message: `${commandesLivraisonAujourdhui.length} à livrer aujourd’hui`,
+            isRead: false,
+          });
+        }
+        if (commandesRealisationDemain.length > 0) {
+          notifs.push({
+            id: 4,
+            icon: <CalendarCheck className="inline-block w-4 h-4 mr-2" />,
+            message: `${commandesRealisationDemain.length} à réaliser demain`,
+            isRead: false,
+          });
+        }
+        if (commandesLivraisonDemain.length > 0) {
+          notifs.push({
+            id: 5,
+            icon: <UploadCloud className="inline-block w-4 h-4 mr-2" />,
+            message: `${commandesLivraisonDemain.length} à livrer demain`,
+            isRead: false,
+          });
+        }
+
+        setNotifications(notifs);
+        const readFromStorage = cleanOldReadNotifications();
+
+        const notifsWithReadStatus = notifs.map((notif) => ({
+          ...notif,
+          isRead: readFromStorage[notif.id] !== undefined,
+        }));
+
+        setNotifications(notifsWithReadStatus);
+
+      })
+      .catch((err) => {
+        console.error("Erreur chargement stats :", err);
+      });
+  }
+}, [activeTab]);
+
+const cleanOldReadNotifications = () => {
+  const raw = localStorage.getItem("readNotifications");
+  if (!raw) return {};
+
+  const parsed: Record<number, string> = JSON.parse(raw);
+  const now = new Date();
+
+  const updated: Record<number, string> = {};
+
+  for (const [id, dateStr] of Object.entries(parsed)) {
+    const readDate = new Date(dateStr);
+    const diffDays = (now.getTime() - readDate.getTime()) / (1000 * 3600 * 24);
+    if (diffDays < 15) {
+      updated[Number(id)] = dateStr;
+    }
+  }
+
+  localStorage.setItem("readNotifications", JSON.stringify(updated));
+  return updated;
+};
+
+const markAsRead = (id: number) => {
+  setNotifications((prev) =>
+    prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+  );
+
+  const raw = localStorage.getItem("readNotifications");
+  const parsed: Record<number, string> = raw ? JSON.parse(raw) : {};
+
+  parsed[id] = new Date().toISOString();
+  localStorage.setItem("readNotifications", JSON.stringify(parsed));
+};
 
   useEffect(() => {
     axios
@@ -584,20 +943,85 @@ const About = () => {
 
           )}
 
-          {activeTab === "notifications" && (
-            <div className="bg-white border border-gray-300 shadow-lg rounded-2xl p-8 text-center">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">Notifications</h2>
-              <p className="text-gray-500 italic">
-                Fonctionnalité à venir : alertes email, SMS, préférences de notification...
-              </p>
+         {activeTab === "notifications" && (
+        <div className={`relative border shadow-lg rounded-2xl p-8 space-y-6 ${darkMode ? "bg-[#1a0536] text-white" : "bg-white text-gray-800"}`}>
+          <div className="absolute top-4 right-4 flex items-center space-x-2">
+            <h4 className="text-lg font-semibold">Notifications du jour</h4>
+            <div className="relative">
+              <button
+                className="p-2 rounded-full hover:text-pink-600 transition"
+                onClick={() => setShowNotifications(!showNotifications)}
+              >
+                <Bell className="w-6 h-6" />
+              </button>
+              {notifications.filter(n => !n.isRead).length > 0 && (
+                <span className="absolute -top-1 -right-1 text-xs font-bold bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+                  {notifications.filter(n => !n.isRead).length}
+                </span>
+              )}
             </div>
+          </div>
+
+          {showNotifications && (
+        <div
+          className={`mt-6 p-4 rounded-xl border max-w-md mx-auto ${
+            darkMode ? "bg-[#2e1555] border-purple-400" : "bg-gray-50 border-gray-300"
+          }`}
+        >
+          <div className="flex items-center justify-between mb-3">
+            <button
+              onClick={() => setShowNotifications(false)}
+              className="text-sm flex items-center gap-1 text-purple-600 hover:underline"
+              aria-label="Fermer les notifications"
+            >
+              <BellOff className="w-4 h-4" />
+              Fermer
+            </button>
+          </div>
+
+          {notifications.length === 0 ? (
+            <p className="text-sm italic text-center">
+              Aucune notification pour le moment.
+            </p>
+          ) : (
+            <ul className="space-y-2 text-sm max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-purple-200 dark:scrollbar-thumb-purple-700 dark:scrollbar-track-transparent">
+              {notifications.map((notif) => (
+                <li
+                  key={notif.id}
+                  className={`p-2 rounded-lg font-medium flex items-center justify-between transition-colors duration-200 ${
+                    notif.isRead
+                      ? darkMode
+                        ? "bg-[#0a0536] text-gray-400"
+                        : "bg-gray-200 text-gray-500"
+                      : darkMode
+                      ? " text-purple-100"
+                      : "bg-purple-50 text-purple-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {notif.icon}
+                    <span>{notif.message}</span>
+                  </div>
+                  {!notif.isRead && (
+                    <button
+                      onClick={() => markAsRead(notif.id)}
+                      className="text-xs px-2 py-1 ml-2 rounded bg-purple-600 text-white hover:bg-purple-700 transition"
+                      aria-label={`Marquer la notification ${notif.id} comme lue`}
+                    >
+                      Marquer comme lu
+                    </button>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
+        </div>
+      )}
+        </div>
+      )}
 
           {activeTab === "historique" && (
-            <div className="bg-white border border-gray-300 shadow-lg rounded-2xl p-8">
-              <h2 className="text-xl font-bold mb-4">Historique</h2>
-              <p className="text-gray-500 italic">Aucune activité récente trouvée.</p>
-            </div>
+            <HistoriqueAvecFiltre commandes={commandes} darkMode={darkMode} />
           )}
         </main>
       </div>

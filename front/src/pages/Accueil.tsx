@@ -108,13 +108,22 @@ const Accueil = () => {
               }
               className={`w-full md:w-1/3 rounded-xl px-4 py-3 font-semibold focus:outline-none focus:ring-4 transition ${
                 darkMode
-                  ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0]  text-purple-200 focus:ring-purple-500"
-                  : "bg-gradient-to-r from-[#faeff9] via-[#faf0aa] to-[#e6e6bf] border border-white text-xm focus:ring-[#e6e6bf]"
+                  ? "bg-gradient-to-r from-[#1a0536] via-[#000] to-[#4a00e0] text-purple-200 focus:ring-purple-500"
+                  : "bg-gradient-to-r from-[#faeff9] via-[#faf0aa] to-[#e6e6bf] border border-white text-gray-800 focus:ring-yellow-400"
               }`}
             >
-              <option value="all">Toutes les années</option>
+              <option
+                value="all"
+                className={darkMode ? "bg-[#1a0536] text-purple-200" : "bg-white text-gray-800"}
+              >
+                Toutes les années
+              </option>
               {anneesDisponibles.map((annee) => (
-                <option key={annee} value={annee}>
+                <option
+                  key={annee}
+                  value={annee}
+                  className={darkMode ? "bg-[#1a0536] text-purple-200" : "bg-white text-gray-800"}
+                >
                   {annee}
                 </option>
               ))}
