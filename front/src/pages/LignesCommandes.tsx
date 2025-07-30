@@ -51,8 +51,10 @@ const FactureImprimable = React.forwardRef<
     }[];
     total: number;
     studio: Studio;
+    montantPaye: number; 
+    resteAPayer: number;
   }
->(({ commande, lignesDetails, total, studio }, ref) => {
+>(({ commande, lignesDetails, total, studio, montantPaye, resteAPayer }, ref) => {
   const today = new Date().toLocaleDateString();
   const dateCommande = new Date(commande.dateCommande).toLocaleDateString();
 
@@ -149,6 +151,18 @@ const FactureImprimable = React.forwardRef<
           </tr>
         </tbody>
       </table>
+      <div style={{ marginTop: 30, textAlign: "right" }}>
+      <p>
+        <strong>Montant payé :</strong>{" "}
+        {montantPaye.toLocaleString()} Ariary
+      </p>
+      <p>
+        <strong>Reste à payer :</strong>{" "}
+        <span style={{ color: "red", fontWeight: "bold" }}>
+          {resteAPayer.toLocaleString()} Ariary
+        </span>
+      </p>
+    </div>
 
       {/* Signature */}
       <div style={{ marginTop: 60, textAlign: "right" }}>
@@ -166,6 +180,9 @@ const LigneCommandes = () => {
     Num_services: 0,
     Id_Commandes: 0,
   });
+const [montantPaye, setMontantPaye] = useState<number>(0);
+const [resteAPayer, setResteAPayer] = useState<number>(0);
+
 
   const [ligneCommandes, setLigneCommandes] = useState<LigneCommande[]>([]);
   const [commandes, setCommandes] = useState<Commande[]>([]);
@@ -727,18 +744,26 @@ const LigneCommandes = () => {
                     Commande #{commande.id} – {commande.nomClient} –{" "}
                     {new Date(commande.dateCommande).toLocaleDateString()}
                   </h3>
+                  <div className="flex items-center gap-3">
+  
                   <button
-                    onClick={() => setFactureActive({ commande, lignesDetails, total })}
+                    onClick={() =>
+                      setFactureActive({
+                        commande,
+                        lignesDetails,
+                        total,
+                      })
+                    }
                     className={`group flex items-center gap-2 px-2 py-1.5 rounded-full transition duration-300 ${
                       darkMode
                         ? "text-purple-300 hover:text-white"
                         : "text-pink-600 hover:text-fuchsia-600"
                     }`}
-                    aria-label={`Imprimer et voir la facture commande ${commande.id}`}
                   >
                     <Eye size={18} />
                     <span className="hidden group-hover:inline text-sm font-medium">Voir & Imprimer</span>
                   </button>
+                </div>
                 </div>
 
                 {/* Conteneur scrollable horizontal pour la table sur petit écran */}
@@ -774,11 +799,43 @@ const LigneCommandes = () => {
                         </tr>
                       ))}
                       <tr>
-                        <td colSpan={4} className="border px-3 py-2 text-right">
+                        <td colSpan={4} className="border px-3 py-2 text-right font-medium">
                           TOTAL
                         </td>
-                        <td className="border px-3 py-2 text-right text-pink-600">
+                        <td className="border px-3 py-2 text-right text-pink-600 font-semibold">
                           {total.toLocaleString()} Ar
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td colSpan={4} className="border px-3 py-2 text-right font-medium">
+                          Montant payé
+                        </td>
+                        <td className="border px-3 py-2 text-right">
+                          <input
+                        placeholder="Montant payé"
+                        value={montantPaye === 0 ? "" : montantPaye}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const paye = val === "" ? 0 : parseFloat(val);
+                          setMontantPaye(isNaN(paye) ? 0 : paye);
+                          setResteAPayer(total - (isNaN(paye) ? 0 : paye));
+                        }}
+                            className={`border-none rounded px-2 py-1 w-32 text-right text-sm ${
+                          darkMode
+                            ? "bg-[#1a0536] text-white"
+                            : "bg-white text-black"
+                        }`}
+                          />
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td colSpan={4} className="border px-3 py-2 text-right font-medium">
+                          Reste à payer
+                        </td>
+                        <td className="border px-3 py-2 text-right text-red-600 font-semibold">
+                          {resteAPayer.toLocaleString()} Ar
                         </td>
                       </tr>
                     </tbody>
@@ -798,6 +855,8 @@ const LigneCommandes = () => {
               lignesDetails={factureActive.lignesDetails}
               total={factureActive.total}
               studio={studio}
+              montantPaye={montantPaye} 
+              resteAPayer={resteAPayer}
             />
           )}
         </div>
