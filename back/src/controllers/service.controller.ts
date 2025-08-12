@@ -57,6 +57,7 @@ export const updateService = async (req: Request, res: Response) => {
 export const deleteService = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {
+    await db.query('DELETE FROM ligne_commande WHERE Num_services = ?', [id]);
     await db.execute("DELETE FROM services WHERE Num_services = ?", [id]);
     res.status(200).json({ message: "Service supprimé" });
   } catch (err) {

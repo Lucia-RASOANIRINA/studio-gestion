@@ -64,6 +64,7 @@ export const updateClient = async (req: Request, res: Response) => {
 export const deleteClient = async (req: Request, res: Response) => {
   const id = req.params.id;
   try {
+    await db.query('DELETE FROM commandes WHERE Id_Clients = ?', [id]);
     await db.execute("DELETE FROM clients WHERE Id_Cli = ?", [id]);
     res.status(200).json({ message: "Client supprimé" });
   } catch (err) {

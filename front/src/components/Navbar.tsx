@@ -38,7 +38,7 @@ const Navbar = () => {
     >
       <div className="w-full flex justify-between items-center px-5 py-4">
         <Link
-          to="/"
+          to="/accueil"
           className={`flex items-center gap-3 text-2xl font-bold tracking-wider transition-transform duration-200 hover:scale-105 ${
             darkMode ? "text-purple-300" : "text-[#ec4899]"
           }`}

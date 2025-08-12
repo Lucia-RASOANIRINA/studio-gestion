@@ -152,16 +152,23 @@ const FactureImprimable = React.forwardRef<
         </tbody>
       </table>
       <div style={{ marginTop: 30, textAlign: "right" }}>
-      <p>
-        <strong>Montant payé :</strong>{" "}
-        {montantPaye.toLocaleString()} Ariary
-      </p>
-      <p>
-        <strong>Reste à payer :</strong>{" "}
-        <span style={{ color: "red", fontWeight: "bold" }}>
-          {resteAPayer.toLocaleString()} Ariary
-        </span>
-      </p>
+      {montantPaye === 0 ? (
+        <p><strong>Paiement en attente</strong></p>
+      ) : montantPaye === total ? (
+        <p><strong>Paiement complet</strong></p>
+      ) : (
+        <>
+          <p>
+            <strong>Montant payé :</strong> {montantPaye.toLocaleString()} Ariary
+          </p>
+          <p>
+            <strong>Reste à payer :</strong>{" "}
+            <span style={{ color: "red", fontWeight: "bold" }}>
+              {resteAPayer.toLocaleString()} Ariary
+            </span>
+          </p>
+        </>
+      )}
     </div>
 
       {/* Signature */}
@@ -180,8 +187,6 @@ const LigneCommandes = () => {
     Num_services: 0,
     Id_Commandes: 0,
   });
-const [montantPaye, setMontantPaye] = useState<number>(0);
-const [resteAPayer, setResteAPayer] = useState<number>(0);
 
 
   const [ligneCommandes, setLigneCommandes] = useState<LigneCommande[]>([]);
@@ -283,46 +288,71 @@ const [resteAPayer, setResteAPayer] = useState<number>(0);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      ...ligneCommande,
-      Quantite_services: Number(ligneCommande.Quantite_services),
-      Prix_unitaire: Number(ligneCommande.Prix_unitaire),
-    };
+  e.preventDefault();
 
-    try {
-      if (indexModification !== null) {
-        const ligne = ligneCommandes[indexModification];
-        await axios.put(
-          `http://localhost:5000/api/ligne_commandes/${ligne.Id_Commandes}/${ligne.Num_services}`,
-          payload
-        );
-        const updated = [...ligneCommandes];
-        updated[indexModification] = payload;
-        setLigneCommandes(updated);
-        setIndexModification(null);
-      } else {
-        const res = await axios.post("http://localhost:5000/api/ligne_commandes", payload);
-        setLigneCommandes([...ligneCommandes, res.data]);
-      }
+  // Vérification des champs obligatoires
+  if (
+    !ligneCommande.Quantite_services ||
+    !ligneCommande.Prix_unitaire ||
+    !ligneCommande.Num_services ||
+    !ligneCommande.Id_Commandes
+  ) {
+    alert("\u26A0 Tous les champs sont requis !"); 
+    return;
+  }
 
-      setLigneCommande({
-        Quantite_services: 0,
-        Prix_unitaire: 0,
-        Num_services: 0,
-        Id_Commandes: 0,
-      });
-    } catch (err) {
-      console.error("Erreur :", err);
-      alert("Erreur d'enregistrement.");
-    }
+  const payload = {
+    ...ligneCommande,
+    Quantite_services: Number(ligneCommande.Quantite_services),
+    Prix_unitaire: Number(ligneCommande.Prix_unitaire),
   };
+
+  try {
+    if (indexModification !== null) {
+      // --- Modification ---
+      const ligne = ligneCommandes[indexModification];
+      await axios.put(
+        `http://localhost:5000/api/ligne_commandes/${ligne.Id_Commandes}/${ligne.Num_services}`,
+        payload
+      );
+      const updated = [...ligneCommandes];
+      updated[indexModification] = payload;
+      setLigneCommandes(updated);
+      setIndexModification(null);
+      alert("✅ Ligne modifiée avec succès !");
+    } else {
+      // --- Ajout ---
+      const res = await axios.post("http://localhost:5000/api/ligne_commandes", payload);
+      setLigneCommandes([...ligneCommandes, res.data]);
+      alert("✅ Ligne ajoutée avec succès !");
+    }
+
+    // Réinitialisation du formulaire
+    setLigneCommande({
+      Quantite_services: 0,
+      Prix_unitaire: 0,
+      Num_services: 0,
+      Id_Commandes: 0,
+    });
+
+  } catch (err) {
+    console.error("Erreur :", err);
+    alert("\u274C Erreur lors de l'enregistrement.");
+  }
+};
+
 
   const modifierLigne = (index: number) => {
-    const ligne = ligneCommandes[index];
-    setLigneCommande({ ...ligne });
-    setIndexModification(index);
-  };
+  const ligne = lignesFiltres[index]; 
+  const indexDansOriginal = ligneCommandes.findIndex(
+    (l) =>
+      l.Id_Commandes === ligne.Id_Commandes &&
+      l.Num_services === ligne.Num_services
+  );
+
+  setLigneCommande({ ...ligne });
+  setIndexModification(indexDansOriginal);
+};
 
   const supprimerLigne = async (index: number) => {
     const ligne = ligneCommandes[index];
@@ -379,6 +409,37 @@ const [resteAPayer, setResteAPayer] = useState<number>(0);
         new Date(b.commande.dateCommande).getTime() -
         new Date(a.commande.dateCommande).getTime()
     );
+  const [montantsPayes, setMontantsPayes] = useState<Record<number, number>>({});
+  const [restesAPayer, setRestesAPayer] = useState<Record<number, number>>({});
+  const initialized = useRef(false);
+  useEffect(() => {
+   if (initialized.current || commandesAvecLignes.length === 0) return;
+  const saved = localStorage.getItem("montantsPayes");
+  let initialMontants: Record<number, number> = {};
+  let initialRestes: Record<number, number> = {};
+
+  if (saved) {
+    try {
+      initialMontants = JSON.parse(saved);
+    } catch {
+      initialMontants = {};
+    }
+  }
+
+  commandesAvecLignes.forEach(({ commande, total }) => {
+    // Si pas dans localStorage, mettre total par défaut
+    if (initialMontants[commande.id] === undefined) {
+      initialMontants[commande.id] = total;
+    }
+    // Calcul reste à payer
+    initialRestes[commande.id] = total - initialMontants[commande.id];
+  });
+  
+
+  setMontantsPayes(initialMontants);
+  setRestesAPayer(initialRestes);
+  initialized.current = true;
+}, [commandesAvecLignes]);
 
   // Filtrer les factures selon termeRechercheFacture
   const commandesFiltres = commandesAvecLignes.filter(({ commande, total, lignesDetails }) => {
@@ -813,19 +874,28 @@ const [resteAPayer, setResteAPayer] = useState<number>(0);
                         </td>
                         <td className="border px-3 py-2 text-right">
                           <input
-                        placeholder="Montant payé"
-                        value={montantPaye === 0 ? "" : montantPaye}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const paye = val === "" ? 0 : parseFloat(val);
-                          setMontantPaye(isNaN(paye) ? 0 : paye);
-                          setResteAPayer(total - (isNaN(paye) ? 0 : paye));
-                        }}
+                            placeholder="Montant payé"
+                            value={montantsPayes[commande.id] ?? ""} // valeur spécifique à la commande
+                            onChange={(e) => {
+                            const val = e.target.value;
+                            const paye = val === "" ? 0 : parseFloat(val);
+                            const nouveauPaye = isNaN(paye) ? 0 : paye;
+
+                            setMontantsPayes((prev) => {
+                              const updated = { ...prev, [commande.id]: nouveauPaye };
+                              localStorage.setItem("montantsPayes", JSON.stringify(updated));
+                              return updated;
+                            });
+
+                            setRestesAPayer((prev) => ({
+                              ...prev,
+                              [commande.id]: total - nouveauPaye,
+                            }));
+                          }}
+
                             className={`border-none rounded px-2 py-1 w-32 text-right text-sm ${
-                          darkMode
-                            ? "bg-[#1a0536] text-white"
-                            : "bg-white text-black"
-                        }`}
+                              darkMode ? "bg-[#1a0536] text-white" : "bg-white text-black"
+                            }`}
                           />
                         </td>
                       </tr>
@@ -835,8 +905,9 @@ const [resteAPayer, setResteAPayer] = useState<number>(0);
                           Reste à payer
                         </td>
                         <td className="border px-3 py-2 text-right text-red-600 font-semibold">
-                          {resteAPayer.toLocaleString()} Ar
-                        </td>
+  {(restesAPayer[commande.id] ?? total).toLocaleString()} Ar
+</td>
+
                       </tr>
                     </tbody>
                   </table>
@@ -855,8 +926,8 @@ const [resteAPayer, setResteAPayer] = useState<number>(0);
               lignesDetails={factureActive.lignesDetails}
               total={factureActive.total}
               studio={studio}
-              montantPaye={montantPaye} 
-              resteAPayer={resteAPayer}
+              montantPaye={montantsPayes[factureActive.commande.id] ?? factureActive.total} 
+              resteAPayer={restesAPayer[factureActive.commande.id] ?? 0}
             />
           )}
         </div>

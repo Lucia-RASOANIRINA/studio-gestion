@@ -278,15 +278,57 @@ const [commandes, setCommandes] = useState<
 
 const [showNotifications, setShowNotifications] = useState(false);
 
-// Notifications dynamiques (avec composants React au lieu de simples chaînes)
+// Type des notifications
 type Notification = {
   id: number;
   icon: React.ReactNode;
   message: string;
   isRead: boolean;
+  date: string; // Date de création ou lecture
 };
 
 const [notifications, setNotifications] = useState<Notification[]>([]);
+
+// Nettoyage des notifications lues de plus de 15 jours
+const cleanOldReadNotifications = () => {
+  const raw = localStorage.getItem("readNotifications");
+  if (!raw) return {};
+
+  const parsed: Record<number, { isRead: boolean; date: string }> = JSON.parse(raw);
+  const now = new Date();
+
+  const updated: Record<number, { isRead: boolean; date: string }> = {};
+
+  for (const [id, entry] of Object.entries(parsed)) {
+    const readDate = new Date(entry.date);
+    const diffDays = (now.getTime() - readDate.getTime()) / (1000 * 3600 * 24);
+    if (diffDays < 15) {
+      updated[Number(id)] = entry;
+    }
+  }
+
+  localStorage.setItem("readNotifications", JSON.stringify(updated));
+  return updated;
+};
+
+// Marquer une notification comme lue
+const markAsRead = (id: number) => {
+  const updatedNotifications = notifications.map((notif) =>
+    notif.id === id ? { ...notif, isRead: true } : notif
+  );
+  setNotifications(updatedNotifications);
+
+  const stored = localStorage.getItem("readNotifications");
+  const parsed = stored ? JSON.parse(stored) : {};
+
+  parsed[id] = {
+    isRead: true,
+    date: new Date().toISOString(), // ← Date de lecture
+  };
+
+  localStorage.setItem("readNotifications", JSON.stringify(parsed));
+};
+
 
 useEffect(() => {
   if (activeTab === "notifications") {
@@ -300,18 +342,17 @@ useEffect(() => {
 
         const estMemeJour = (a: Date, b: Date) => a.toDateString() === b.toDateString();
 
-        const commandesAujourdhui = all.filter((c: any) =>
-          (c.dateRealisation && estMemeJour(new Date(c.dateRealisation), today)) ||
-          (c.dateLivraison && estMemeJour(new Date(c.dateLivraison), today))
+        const commandesAujourdhui = all.filter(
+          (c: any) =>
+            (c.dateRealisation && estMemeJour(new Date(c.dateRealisation), today)) ||
+            (c.dateLivraison && estMemeJour(new Date(c.dateLivraison), today))
         );
-
         const commandesRealisationAujourdhui = all.filter(
           (c: any) => c.dateRealisation && estMemeJour(new Date(c.dateRealisation), today)
         );
         const commandesLivraisonAujourdhui = all.filter(
           (c: any) => c.dateLivraison && estMemeJour(new Date(c.dateLivraison), today)
         );
-
         const commandesRealisationDemain = all.filter(
           (c: any) => c.dateRealisation && estMemeJour(new Date(c.dateRealisation), demain)
         );
@@ -319,59 +360,54 @@ useEffect(() => {
           (c: any) => c.dateLivraison && estMemeJour(new Date(c.dateLivraison), demain)
         );
 
+        const readFromStorage = cleanOldReadNotifications();
+        const baseDate = new Date().toISOString();
+
         const notifs: Notification[] = [];
 
+        const pushNotif = (id: number, icon: React.ReactNode, message: string) => {
+          const isRead = readFromStorage[id]?.isRead || false;
+          const date = readFromStorage[id]?.date || baseDate;
+          notifs.push({ id, icon, message, isRead, date });
+        };
+
         if (commandesAujourdhui.length > 0) {
-          notifs.push({
-            id: 1,
-            icon: <PackageCheck className="inline-block w-4 h-4 mr-2" />,
-            message: `${commandesAujourdhui.length} commande(s) enregistrée(s) aujourd’hui`,
-            isRead: false,
-          });
+          pushNotif(
+            1,
+            <PackageCheck className="inline-block w-4 h-4 mr-2" />,
+            `${commandesAujourdhui.length} commande(s) enregistrée(s) aujourd’hui`
+          );
         }
         if (commandesRealisationAujourdhui.length > 0) {
-          notifs.push({
-            id: 2,
-            icon: <Wrench className="inline-block w-4 h-4 mr-2" />,
-            message: `${commandesRealisationAujourdhui.length} à réaliser aujourd’hui`,
-            isRead: false,
-          });
+          pushNotif(
+            2,
+            <Wrench className="inline-block w-4 h-4 mr-2" />,
+            `${commandesRealisationAujourdhui.length} à réaliser aujourd’hui`
+          );
         }
         if (commandesLivraisonAujourdhui.length > 0) {
-          notifs.push({
-            id: 3,
-            icon: <Truck className="inline-block w-4 h-4 mr-2" />,
-            message: `${commandesLivraisonAujourdhui.length} à livrer aujourd’hui`,
-            isRead: false,
-          });
+          pushNotif(
+            3,
+            <Truck className="inline-block w-4 h-4 mr-2" />,
+            `${commandesLivraisonAujourdhui.length} à livrer aujourd’hui`
+          );
         }
         if (commandesRealisationDemain.length > 0) {
-          notifs.push({
-            id: 4,
-            icon: <CalendarCheck className="inline-block w-4 h-4 mr-2" />,
-            message: `${commandesRealisationDemain.length} à réaliser demain`,
-            isRead: false,
-          });
+          pushNotif(
+            4,
+            <CalendarCheck className="inline-block w-4 h-4 mr-2" />,
+            `${commandesRealisationDemain.length} à réaliser demain`
+          );
         }
         if (commandesLivraisonDemain.length > 0) {
-          notifs.push({
-            id: 5,
-            icon: <UploadCloud className="inline-block w-4 h-4 mr-2" />,
-            message: `${commandesLivraisonDemain.length} à livrer demain`,
-            isRead: false,
-          });
+          pushNotif(
+            5,
+            <UploadCloud className="inline-block w-4 h-4 mr-2" />,
+            `${commandesLivraisonDemain.length} à livrer demain`
+          );
         }
 
         setNotifications(notifs);
-        const readFromStorage = cleanOldReadNotifications();
-
-        const notifsWithReadStatus = notifs.map((notif) => ({
-          ...notif,
-          isRead: readFromStorage[notif.id] !== undefined,
-        }));
-
-        setNotifications(notifsWithReadStatus);
-
       })
       .catch((err) => {
         console.error("Erreur chargement stats :", err);
@@ -379,38 +415,68 @@ useEffect(() => {
   }
 }, [activeTab]);
 
-const cleanOldReadNotifications = () => {
-  const raw = localStorage.getItem("readNotifications");
-  if (!raw) return {};
+// Historique des notifications
+const HistoriqueNotifications = ({ darkMode }: { darkMode: boolean }) => {
+  const [allNotifications, setAllNotifications] = useState<
+    { id: number; isRead: boolean; date: string }[]
+  >([]);
 
-  const parsed: Record<number, string> = JSON.parse(raw);
-  const now = new Date();
-
-  const updated: Record<number, string> = {};
-
-  for (const [id, dateStr] of Object.entries(parsed)) {
-    const readDate = new Date(dateStr);
-    const diffDays = (now.getTime() - readDate.getTime()) / (1000 * 3600 * 24);
-    if (diffDays < 15) {
-      updated[Number(id)] = dateStr;
+  useEffect(() => {
+    const stored = localStorage.getItem("readNotifications");
+    if (stored) {
+      const parsed: Record<number, { isRead: boolean; date: string }> = JSON.parse(stored);
+      const all = Object.entries(parsed).map(([id, val]) => ({
+        id: Number(id),
+        isRead: val.isRead,
+        date: new Date(val.date).toLocaleString("fr-FR"),
+      }));
+      setAllNotifications(all);
     }
-  }
+  }, []);
 
-  localStorage.setItem("readNotifications", JSON.stringify(updated));
-  return updated;
-};
-
-const markAsRead = (id: number) => {
-  setNotifications((prev) =>
-    prev.map((n) => (n.id === id ? { ...n, isRead: true } : n))
+  return (
+    <div className={`mt-10 p-6 rounded-xl shadow border max-w-2xl mx-auto ${
+      darkMode ? "bg-[#1a0536] text-white border-purple-600" : "bg-white text-gray-900 border-gray-300"
+    }`}>
+      <h2 className="text-xl font-bold mb-4">📋 Historique des notifications</h2>
+      {allNotifications.length === 0 ? (
+        <p className="italic text-sm">Aucune notification enregistrée.</p>
+      ) : (
+        <>
+          <p className="text-sm mb-4">
+            Total : <strong>{allNotifications.length}</strong>
+          </p>
+          <ul className="space-y-2 max-h-64 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 dark:scrollbar-thumb-purple-800">
+            {allNotifications.map((notif) => (
+              <li key={notif.id} className={`p-3 rounded-md border flex justify-between items-center ${
+                notif.isRead
+                  ? darkMode
+                    ? "bg-[#2e1555] border-purple-800 text-gray-400"
+                    : "bg-gray-100 border-gray-300 text-gray-600"
+                  : darkMode
+                  ? "bg-purple-900 border-purple-400"
+                  : "bg-purple-50 border-purple-300"
+              }`}>
+                <div>
+                  <p className="font-semibold">Notification #{notif.id}</p>
+                  <p className="text-sm">Date : {notif.date}</p>
+                </div>
+                <span className={`text-xs font-bold px-2 py-1 rounded ${
+                  notif.isRead
+                    ? "bg-green-200 text-green-800"
+                    : "bg-yellow-200 text-yellow-800"
+                }`}>
+                  {notif.isRead ? "Lue" : "Non lue"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
   );
-
-  const raw = localStorage.getItem("readNotifications");
-  const parsed: Record<number, string> = raw ? JSON.parse(raw) : {};
-
-  parsed[id] = new Date().toISOString();
-  localStorage.setItem("readNotifications", JSON.stringify(parsed));
 };
+
 
   useEffect(() => {
     axios
@@ -455,26 +521,43 @@ const markAsRead = (id: number) => {
 
   const handlePasswordChange = async () => {
     if (!email) return setMessage("Veuillez entrer votre email.");
-    if (newPassword !== confirmPassword) return setMessage("Les mots de passe ne correspondent pas.");
+
+    // Vérification longueur minimale
+    if (newPassword.length < 8) {
+        return setMessage("Le mot de passe doit contenir au moins 8 caractères.");
+    }
+
+    // Vérification complexité avec Regex
+    const regexComplexite = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_])/;
+    if (!regexComplexite.test(newPassword)) {
+        return setMessage(
+            "Le mot de passe doit avoir caractéristique complexe."
+        );
+    }
+
+    // Vérification confirmation
+    if (newPassword !== confirmPassword) {
+        return setMessage("Les mots de passe ne correspondent pas.");
+    }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) return setMessage("Utilisateur non authentifié.");
+        const token = localStorage.getItem("token");
+        if (!token) return setMessage("Utilisateur non authentifié.");
 
-      const response = await axios.post(
-        "http://localhost:5000/api/changerMotDePasse",
-        { email, nouveau: newPassword },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+        const response = await axios.post(
+            "http://localhost:5000/api/changerMotDePasse",
+            { email, nouveau: newPassword },
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
 
-      setMessage(response.data.message);
-      setEmail("");
-      setNewPassword("");
-      setConfirmPassword("");
+        setMessage(response.data.message);
+        setEmail("");
+        setNewPassword("");
+        setConfirmPassword("");
     } catch (error: any) {
-      setMessage(error.response?.data?.message || "Erreur lors du changement.");
+        setMessage(error.response?.data?.message || "Erreur lors du changement.");
     }
-  };
+};
 
   if (loading) return <div className="text-center pt-20">Chargement...</div>;
   if (!studio) return <div className="text-center pt-20 text-red-500">Erreur de chargement</div>;
@@ -944,81 +1027,74 @@ const markAsRead = (id: number) => {
           )}
 
          {activeTab === "notifications" && (
-        <div className={`relative border shadow-lg rounded-2xl p-8 space-y-6 ${darkMode ? "bg-[#1a0536] text-white" : "bg-white text-gray-800"}`}>
-          <div className="absolute top-4 right-4 flex items-center space-x-2">
-            <h4 className="text-lg font-semibold">Notifications du jour</h4>
-            <div className="relative">
-              <button
-                className="p-2 rounded-full hover:text-pink-600 transition"
-                onClick={() => setShowNotifications(!showNotifications)}
-              >
-                <Bell className="w-6 h-6" />
-              </button>
-              {notifications.filter(n => !n.isRead).length > 0 && (
-                <span className="absolute -top-1 -right-1 text-xs font-bold bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
-                  {notifications.filter(n => !n.isRead).length}
-                </span>
-              )}
-            </div>
-          </div>
-
-          {showNotifications && (
-        <div
-          className={`mt-6 p-4 rounded-xl border max-w-md mx-auto ${
-            darkMode ? "bg-[#2e1555] border-purple-400" : "bg-gray-50 border-gray-300"
-          }`}
+  <div
+    className={`relative border shadow-lg rounded-2xl p-8 space-y-6 ${
+      darkMode ? "bg-[#1a0536] text-white" : "bg-white text-gray-800"
+    }`}
+  >
+    <div className="absolute top-4 right-4 flex items-center space-x-2">
+      <h4 className="text-lg font-semibold">Notifications du jour</h4>
+      <div className="relative">
+        <button
+          className="p-2 rounded-full hover:text-pink-600 transition"
+          onClick={() => setShowNotifications(!showNotifications)}
         >
-          <div className="flex items-center justify-between mb-3">
-            <button
-              onClick={() => setShowNotifications(false)}
-              className="text-sm flex items-center gap-1 text-purple-600 hover:underline"
-              aria-label="Fermer les notifications"
-            >
-              <BellOff className="w-4 h-4" />
-              Fermer
-            </button>
-          </div>
+          <Bell className="w-6 h-6" />
+        </button>
+        {notifications.filter((n) => !n.isRead).length > 0 && (
+          <span className="absolute -top-1 -right-1 text-xs font-bold bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center">
+            {notifications.filter((n) => !n.isRead).length}
+          </span>
+        )}
+      </div>
+    </div>
 
-          {notifications.length === 0 ? (
-            <p className="text-sm italic text-center">
-              Aucune notification pour le moment.
-            </p>
-          ) : (
-            <ul className="space-y-2 text-sm max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-purple-200 dark:scrollbar-thumb-purple-700 dark:scrollbar-track-transparent">
-              {notifications.map((notif) => (
-                <li
-                  key={notif.id}
-                  className={`p-2 rounded-lg font-medium flex items-center justify-between transition-colors duration-200 ${
-                    notif.isRead
-                      ? darkMode
-                        ? "bg-[#0a0536] text-gray-400"
-                        : "bg-gray-200 text-gray-500"
-                      : darkMode
-                      ? " text-purple-100"
-                      : "bg-purple-50 text-purple-900"
-                  }`}
+    {showNotifications && (
+      <div
+        className={`mt-6 p-4 rounded-xl border max-w-md mx-auto ${
+          darkMode ? "bg-[#2e1555] border-purple-400" : "bg-gray-50 border-gray-300"
+        }`}
+      >
+        <div className="flex items-center justify-between mb-3">
+          <button
+            onClick={() => setShowNotifications(false)}
+            className="text-sm flex items-center gap-1 text-purple-600 hover:underline"
+            aria-label="Fermer les notifications"
+          >
+            <BellOff className="w-4 h-4" />
+            Fermer
+          </button>
+        </div>
+
+        {notifications.length === 0 ? (
+          <p className="text-sm italic text-center">
+            Aucune notification pour le moment.
+          </p>
+        ) : (
+          <ul className="space-y-2 text-sm max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-purple-200 dark:scrollbar-thumb-purple-700 dark:scrollbar-track-transparent">
+            {notifications
+            .filter((notif) => !notif.isRead)
+            .map((notif) => (
+              <div key={notif.id} className="p-3 border rounded-lg mb-2 flex items-center">
+                {notif.icon}
+                <span className="ml-2">{notif.message}</span>
+                <button
+                  className="ml-auto text-sm text-blue-500"
+                  onClick={() => markAsRead(notif.id)}
                 >
-                  <div className="flex items-center gap-2">
-                    {notif.icon}
-                    <span>{notif.message}</span>
-                  </div>
-                  {!notif.isRead && (
-                    <button
-                      onClick={() => markAsRead(notif.id)}
-                      className="text-xs px-2 py-1 ml-2 rounded bg-purple-600 text-white hover:bg-purple-700 transition"
-                      aria-label={`Marquer la notification ${notif.id} comme lue`}
-                    >
-                      Marquer comme lu
-                    </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      )}
-        </div>
-      )}
+                  Marquer comme lue
+                </button>
+              </div>
+            ))}
+          </ul>
+        )}
+      </div>
+    )}
+
+    {/* Historique complet des notifications (en localStorage) */}
+    <HistoriqueNotifications darkMode={darkMode} />
+  </div>
+)}
 
           {activeTab === "historique" && (
             <HistoriqueAvecFiltre commandes={commandes} darkMode={darkMode} />

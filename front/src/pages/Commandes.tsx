@@ -95,6 +95,7 @@ const Commandes = () => {
         nouvelles[indexModification] = { ...commande, id: commandeAModifier.id };
         setCommandes(nouvelles);
         setIndexModification(null);
+        alert("✅ Commande modifiée avec succès !");
       } else {
         // Vérifier les limites
         const nbRealisation = commandes.filter(
@@ -117,6 +118,7 @@ const Commandes = () => {
 
         const res = await axios.post("http://localhost:5000/api/commandes", commande);
         setCommandes([...commandes, res.data]);
+        ("✅ Commande ajoutée avec succès !");
       }
 
       setCommande({

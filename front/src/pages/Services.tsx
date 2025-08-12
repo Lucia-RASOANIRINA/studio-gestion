@@ -99,9 +99,11 @@ const Services = () => {
         nouveaux[indexModification] = { ...service, id: serviceAModifier.id };
         setServices(nouveaux);
         setIndexModification(null);
+        alert("✅ Service modifiée avec succès !");
       } else {
         const res = await axios.post("http://localhost:5000/api/services", service);
         setServices([...services, res.data]);
+        alert("✅ Service ajoutée avec succès !");
       }
 
       setService({ titre: "", type: "", unite: "" });

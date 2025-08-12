@@ -119,9 +119,11 @@ const Clients = () => {
         nouveaux[indexModification] = { ...client, id: clientAModifier.id };
         setClients(nouveaux);
         setIndexModification(null);
+        alert("✅ Client modifié avec succès !");
       } else {
         const res = await axios.post("http://localhost:5000/api/clients", client);
         setClients([...clients, res.data]);
+        alert("✅ Client ajouté avec succès !");
       }
 
       setClient({ nom: "", telephone: "", adresse: "", email: "" });

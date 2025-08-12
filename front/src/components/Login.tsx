@@ -65,31 +65,95 @@ const Login: React.FC = () => {
     });
   };
 
-  const onSubmit = async (data: FormData) => {
-    setServerError(null);
-    if (rememberMe) {
-      localStorage.setItem('rememberEmail', data.email);
+  const [failedAttempts, setFailedAttempts] = useState<number>(0);
+const [blockUntil, setBlockUntil] = useState<number | null>(null);
+const [blockStage, setBlockStage] = useState<number>(0);
+
+useEffect(() => {
+  const storedAttempts = localStorage.getItem("failedAttempts");
+  const storedBlockUntil = localStorage.getItem("blockUntil");
+  const storedBlockStage = localStorage.getItem("blockStage");
+
+  if (storedAttempts) setFailedAttempts(parseInt(storedAttempts));
+  if (storedBlockUntil) setBlockUntil(parseInt(storedBlockUntil));
+  if (storedBlockStage) setBlockStage(parseInt(storedBlockStage));
+}, []);
+
+const saveState = (attempts: number, stage: number, until: number | null) => {
+  localStorage.setItem("failedAttempts", attempts.toString());
+  localStorage.setItem("blockStage", stage.toString());
+  if (until) {
+    localStorage.setItem("blockUntil", until.toString());
+  } else {
+    localStorage.removeItem("blockUntil");
+  }
+};
+
+const getBlockDuration = (stage: number) => {
+  switch (stage) {
+    case 1: return 30 * 1000; // 30 sec
+    case 2: return 60 * 1000; // 1 min
+    case 3: return 60 * 60 * 1000; // 1 h
+    case 4: return 24 * 60 * 60 * 1000; // 1 jour
+    default: return null; // blocage définitif
+  }
+};
+
+const onSubmit = async (data: FormData) => {
+  setServerError(null);
+
+  const now = Date.now();
+  if (blockUntil && now < blockUntil) {
+    const remaining = Math.ceil((blockUntil - now) / 1000);
+    setServerError(`Réessayez dans ${remaining} secondes.`);
+    return;
+  }
+
+  try {
+    const response = await axios.post('http://localhost:5000/api/login', data);
+    alert(response.data.message);
+    localStorage.setItem('token', response.data.token);
+
+    // Réinitialisation après succès
+    setFailedAttempts(0);
+    setBlockStage(0);
+    setBlockUntil(null);
+    saveState(0, 0, null);
+
+    window.location.href = '/accueil';
+  } catch (error: any) {
+    let attempts = failedAttempts + 1;
+    let stage = blockStage;
+    let until: number | null = null;
+
+    // Détection du palier selon tentatives
+    if (stage === 0 && attempts >= 5) {
+      stage = 1; until = Date.now() + getBlockDuration(stage)!;
+    } else if (stage === 1 && attempts >= 8) { // +3
+      stage = 2; until = Date.now() + getBlockDuration(stage)!;
+    } else if (stage === 2 && attempts >= 10) { // +2
+      stage = 3; until = Date.now() + getBlockDuration(stage)!;
+    } else if (stage === 3 && attempts >= 12) { // +2
+      stage = 4; until = Date.now() + getBlockDuration(stage)!;
+    } else if (stage === 4 && attempts >= 14) { // +2
+      stage = 5; // Définitif
+    }
+
+    setFailedAttempts(attempts);
+    setBlockStage(stage);
+    setBlockUntil(until);
+    saveState(attempts, stage, until);
+
+    if (stage === 5) {
+      setServerError("Compte définitivement bloqué.");
+    } else if (until) {
+      setServerError(`Trop de tentatives. Compte bloqué pour ${getBlockDuration(stage)! / 1000} secondes.`);
     } else {
-      localStorage.removeItem('rememberEmail');
+      setServerError(error.response?.data?.message || "Erreur de connexion au serveur");
     }
+  }
+};
 
-    try {
-      const response = await axios.post('http://localhost:5000/api/login', data);
-      alert(response.data.message);
-
-      // Stocker token JWT
-      localStorage.setItem('token', response.data.token);
-
-      // Redirection vers page d'accueil
-      window.location.href = '/accueil'; 
-    } catch (error: any) {
-      if (error.response) {
-        setServerError(error.response.data.message);
-      } else {
-        setServerError("Erreur de connexion au serveur");
-      }
-    }
-  };
 
   return (
     <div
@@ -260,7 +324,11 @@ const Login: React.FC = () => {
 
             {/* Affichage erreur serveur */}
             {serverError && <p className="text-red-600 text-sm">{serverError}</p>}
-
+            {blockUntil && Date.now() < blockUntil && (
+              <p className="text-red-600 text-xs font-bold">
+                Compte bloqué jusqu’à {new Date(blockUntil).toLocaleTimeString()}.
+              </p>
+            )}
             <button
               type="submit"
               className={`w-full py-2 font-semibold rounded-full transition duration-300 transform hover:-translate-y-1 flex items-center justify-center gap-2 ${

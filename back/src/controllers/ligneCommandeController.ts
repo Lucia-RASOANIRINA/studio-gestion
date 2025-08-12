@@ -9,7 +9,7 @@ interface LigneCommandeAvecTotal extends LigneCommande {
 
 export const getLignesCommandes = async (_req: Request, res: Response) => {
   const [rows] = await db.query<(LigneCommandeAvecTotal & RowDataPacket)[]>(
-    "SELECT *, Total FROM ligne_commande"
+    "SELECT *, Total FROM ligne_commande order by Id_commandes desc"
   );
   res.json(rows);
 };
